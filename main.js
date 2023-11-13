@@ -2,11 +2,9 @@ import "./style.css";
 
 import * as THREE from "three";
 
-// import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 let camera, scene, renderer;
 let controls, water, sun;
@@ -122,26 +120,6 @@ async function init() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.update();
-
-  // // GUI
-
-  // const gui = new GUI();
-
-  // const folderSky = gui.addFolder("Sky");
-  // folderSky.add(parameters, "elevation", 0, 90, 0.1).onChange(updateSun);
-  // folderSky.add(parameters, "azimuth", -180, 180, 0.1).onChange(updateSun);
-  // folderSky.open();
-
-  // const waterUniforms = water.material.uniforms;
-
-  // waterUniforms.size.value = 10;
-
-  // const folderWater = gui.addFolder("Water");
-  // folderWater
-  //   .add(waterUniforms.distortionScale, "value", 0, 8, 0.1)
-  //   .name("distortionScale");
-  // folderWater.add(waterUniforms.size, "value", 0.1, 10, 0.1).name("size");
-  // folderWater.open();
 
   window.addEventListener("resize", onWindowResize);
 }
