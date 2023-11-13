@@ -16,12 +16,14 @@ const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
 const canvas = renderer.domElement;
 const backgroundMusic = document.getElementById("background-music"); // Get the audio element
+const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a reference to the volume toggle button
 
 // Initially hide the canvas
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
 
 backgroundMusic.volume = 0.69;
+backgroundMusic.loop = true;
 
 startButton.addEventListener("click", function () {
   // Start fading out the loading screen and fading in the scene
@@ -33,6 +35,17 @@ startButton.addEventListener("click", function () {
 
   // Play the background music
   backgroundMusic.play();
+});
+
+// Volume Toggle Button Event Listener
+volumeToggleBtn.addEventListener("click", function () {
+  if (backgroundMusic.volume > 0) {
+    backgroundMusic.volume = 0; // Mute the music
+    volumeToggleBtn.textContent = "Unmute Music"; // Update the button text
+  } else {
+    backgroundMusic.volume = 0.69; // Restore the volume
+    volumeToggleBtn.textContent = "Mute Music"; // Update the button text
+  }
 });
 
 async function init() {
