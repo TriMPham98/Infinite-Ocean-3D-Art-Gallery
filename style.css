@@ -11,23 +11,6 @@ body {
   height: 100vh; /* Prevent vertical scrolling */
 }
 
-#volume-toggle {
-  position: absolute;
-  bottom: 10px; /* or any other appropriate value */
-  left: 10px; /* or any other appropriate value */
-  padding: 5px 10px;
-  border: 1px solid #fff;
-  border-radius: 5px;
-  background-color: rgba(255, 255, 255, 0);
-  color: #fff;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-#volume-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
 #loading-screen {
   position: absolute;
   width: 100%;
@@ -125,4 +108,21 @@ body {
 .hidden {
   opacity: 0;
   pointer-events: none;
+}
+
+#volume-toggle {
+  position: absolute;
+  bottom: 10px; /* or any other appropriate value */
+  left: 10px; /* or any other appropriate value */
+  padding: 5px 10px;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#volume-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
