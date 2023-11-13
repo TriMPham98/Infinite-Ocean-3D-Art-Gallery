@@ -62,7 +62,7 @@ async function init() {
     textureWidth: 512,
     textureHeight: 512,
     waterNormals: new THREE.TextureLoader().load(
-      "assets/waternormals.jpg",
+      "waternormals.jpg",
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       }
