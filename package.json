@@ -1,17 +1,17 @@
 {
-  "name": "threejs-journey-exercise",
+  "name": "3d-ocean",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^4.0.4"
+    "vite": "^4.4.5"
   },
   "dependencies": {
-    "lil-gui": "^0.17.0",
-    "three": "^0.148.0"
+    "three": "^0.158.0"
   }
 }
