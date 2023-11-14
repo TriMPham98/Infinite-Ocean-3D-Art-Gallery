@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
+import { gsap } from "gsap";
 
 // Scene, camera, and renderer declarations
 let camera, scene, renderer;
@@ -24,7 +25,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 // UI initial states
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.0;
+backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -57,6 +58,10 @@ async function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   document.body.appendChild(renderer.domElement);
+
+  document
+    .getElementById("start-button")
+    .addEventListener("click", panToCenter);
 
   // Scene setup
   scene = new THREE.Scene();
@@ -189,4 +194,28 @@ function render() {
   water.material.uniforms["time"].value += 0.69 / 60.0;
 
   renderer.render(scene, camera);
+}
+
+function panToCenter() {
+  const targetPosition = controls.target.clone();
+  const initialPosition = new THREE.Vector3(0, 200, 0);
+  camera.position.copy(initialPosition);
+  controls.update();
+
+  const finalPosition = new THREE.Vector3(
+    targetPosition.x,
+    targetPosition.y + 10,
+    targetPosition.z + 50
+  );
+
+  gsap.to(camera.position, {
+    x: finalPosition.x,
+    y: finalPosition.y,
+    z: finalPosition.z,
+    duration: 6.9, // Duration in seconds
+    ease: "power2.inOut",
+    onUpdate: function () {
+      controls.update(); // Update the controls during the animation
+    },
+  });
 }
