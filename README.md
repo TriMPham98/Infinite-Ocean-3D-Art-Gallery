@@ -1,2 +1,3 @@
-# 3D-ocean
-3D ocean using Three.js
+# 3D Art Gallery
+
+## CS 351 Website Development Final Project
