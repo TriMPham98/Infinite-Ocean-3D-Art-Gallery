@@ -24,7 +24,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 // UI initial states
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.69;
+backgroundMusic.volume = 0.0;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -109,7 +109,7 @@ async function init() {
 
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
     canvas.rotation.x = Math.PI / 2;
-    canvas.rotation.z = angle + (Math.PI / 2);
+    canvas.rotation.z = angle + Math.PI / 2;
 
     // Positioning canvas in a circle
     canvas.position.set(
