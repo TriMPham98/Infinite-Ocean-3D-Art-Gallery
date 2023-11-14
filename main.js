@@ -68,7 +68,7 @@ async function init() {
     1,
     20000
   );
-  camera.position.set(30, 30, 100);
+  camera.position.set(0, 0, 0);
 
   // Sun vector for lighting
   sun = new THREE.Vector3();
@@ -95,6 +95,31 @@ async function init() {
   water.rotation.x = -Math.PI / 2;
 
   scene.add(water);
+
+  // Constants for circle arrangement
+  const numberOfCanvases = 10;
+  const circleRadius = 69;
+  const canvasYPosition = 15;
+
+  for (let i = 0; i < numberOfCanvases; i++) {
+    const angle = (i / numberOfCanvases) * Math.PI * 2; // Angle for each canvas
+
+    const canvasGeometry = new THREE.BoxGeometry(15, 1, 25);
+    const canvasMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+    const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
+    canvas.rotation.x = Math.PI / 2;
+    canvas.rotation.z = angle + (Math.PI / 2);
+
+    // Positioning canvas in a circle
+    canvas.position.set(
+      circleRadius * Math.cos(angle), // x position
+      canvasYPosition, // y position
+      circleRadius * Math.sin(angle) // z position
+    );
+
+    scene.add(canvas);
+  }
 
   // Skybox creation
   const sky = new Sky();
