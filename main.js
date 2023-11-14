@@ -104,12 +104,12 @@ async function init() {
   // Constants for circle arrangement
   const numberOfCanvases = 10;
   const circleRadius = 69;
-  const canvasYPosition = 15;
+  const canvasYPosition = 18;
 
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2; // Angle for each canvas
 
-    const canvasGeometry = new THREE.BoxGeometry(15, 1, 25);
+    const canvasGeometry = new THREE.BoxGeometry(20, 1, 30);
     const canvasMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
 
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
@@ -198,7 +198,7 @@ function render() {
 
 function panToCenter() {
   const targetPosition = controls.target.clone();
-  const initialPosition = new THREE.Vector3(0, 200, 0);
+  const initialPosition = new THREE.Vector3(690, 1000, 0);
   camera.position.copy(initialPosition);
   controls.update();
 
