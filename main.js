@@ -102,7 +102,7 @@ async function init() {
   scene.add(water);
 
   // Constants for circle arrangement
-  const numberOfCanvases = 10;
+  const numberOfCanvases = 12;
   const circleRadius = 69;
   const canvasYPosition = 18;
 
