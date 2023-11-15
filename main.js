@@ -115,7 +115,7 @@ async function init() {
   // Constants for circle arrangement
   const numberOfCanvases = 12;
   const circleRadius = 69;
-  const canvasYPosition = 18;
+  const canvasYPosition = 20;
 
   // Texture Loader
   const loader = new THREE.TextureLoader();
@@ -264,10 +264,10 @@ function panToCenter() {
 
   gsap.to(camera.position, {
     x: finalPosition.x,
-    y: finalPosition.y - 5,
+    y: finalPosition.y - 3,
     z: finalPosition.z,
     // TODO: Change back to 6.9 seconds for production
-    duration: 0.9, // Duration in seconds
+    duration: 6.9, // Duration in seconds
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update(); // Update the controls during the animation
