@@ -26,7 +26,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
 // TODO: Turn up background music for production
-backgroundMusic.volume = 0.0;
+backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -42,13 +42,23 @@ startButton.addEventListener("click", function () {
   backgroundMusic.play();
 });
 
-volumeToggleBtn.addEventListener("click", function () {
+function toggleMusic() {
   if (backgroundMusic.volume > 0) {
     backgroundMusic.volume = 0; // Mute the music
     volumeToggleBtn.textContent = "Unmute Music"; // Update the button text
   } else {
     backgroundMusic.volume = 0.69; // Restore the volume
     volumeToggleBtn.textContent = "Mute Music"; // Update the button text
+  }
+}
+
+// Event listener for the button click
+volumeToggleBtn.addEventListener("click", toggleMusic);
+
+// Event listener for the 'm' keydown
+window.addEventListener("keydown", function (event) {
+  if (event.key === "m" || event.key === "M") {
+    toggleMusic();
   }
 });
 
@@ -119,7 +129,7 @@ async function init() {
     const canvasGeometry = new THREE.BoxGeometry(20, 1, 30);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
-      side: THREE.FrontSide
+      side: THREE.FrontSide,
     });
 
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
@@ -224,7 +234,7 @@ function panToCenter() {
     y: finalPosition.y - 5,
     z: finalPosition.z,
     // TODO: Change back to 6.9 seconds for production
-    duration: 0.9, // Duration in seconds
+    duration: 6.9, // Duration in seconds
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update(); // Update the controls during the animation
