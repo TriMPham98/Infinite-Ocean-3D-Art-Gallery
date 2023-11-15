@@ -26,7 +26,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
 // TODO: Turn up background music for production
-backgroundMusic.volume = 0.69;
+backgroundMusic.volume = 0.0;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -126,7 +126,7 @@ async function init() {
     // Load a unique texture for each canvas
     const texture = loader.load("/assets/image" + i + ".jpg"); // Replace with actual paths
 
-    const canvasGeometry = new THREE.BoxGeometry(20, 1, 30);
+    const canvasGeometry = new THREE.BoxGeometry(20, 0, 30);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
       side: THREE.FrontSide,
@@ -234,7 +234,7 @@ function panToCenter() {
     y: finalPosition.y - 5,
     z: finalPosition.z,
     // TODO: Change back to 6.9 seconds for production
-    duration: 6.9, // Duration in seconds
+    duration: 0.9, // Duration in seconds
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update(); // Update the controls during the animation
