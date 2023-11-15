@@ -123,7 +123,7 @@ async function init() {
 
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
     canvas.rotation.x = Math.PI / 2;
-    canvas.rotation.z = angle + Math.PI / 2;
+    canvas.rotation.z = angle - Math.PI / 2;
 
     // Positioning canvas in a circle
     canvas.position.set(
