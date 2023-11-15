@@ -120,11 +120,43 @@ async function init() {
   // Texture Loader
   const loader = new THREE.TextureLoader();
 
+  // Constants
+  const frameDepth = 1.0; // The depth of the frame
+  const frameOffset = 1.5; // How much larger the frame is than the canvas
+  const frameRadius = circleRadius - 1; // Make the frame radius slightly smaller
+
+  // Create frames in the first loop
   for (let i = 0; i < numberOfCanvases; i++) {
-    const angle = (i / numberOfCanvases) * Math.PI * 2; // Angle for each canvas
+    const angle = (i / numberOfCanvases) * Math.PI * 2;
+
+    // Frame geometry is slightly larger than the canvas
+    const frameGeometry = new THREE.BoxGeometry(
+      20 + frameOffset * 2,
+      frameDepth,
+      30 + frameOffset * 2
+    );
+    const frameMaterial = new THREE.MeshBasicMaterial({ color: 0xf8f8ff });
+    const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+
+    frame.rotation.x = Math.PI / 2;
+    frame.rotation.z = angle - Math.PI / 2;
+
+    // Position the frame slightly behind the canvas's position
+    frame.position.set(
+      frameRadius * Math.cos(angle),
+      canvasYPosition - frameDepth / 2, // This will set the frame behind the canvas
+      frameRadius * Math.sin(angle)
+    );
+
+    scene.add(frame);
+  }
+
+  // Create canvases in the second loop
+  for (let i = 0; i < numberOfCanvases; i++) {
+    const angle = (i / numberOfCanvases) * Math.PI * 2;
 
     // Load a unique texture for each canvas
-    const texture = loader.load("/assets/image" + i + ".jpg"); // Replace with actual paths
+    const texture = loader.load("/assets/image" + i + ".jpg");
 
     const canvasGeometry = new THREE.BoxGeometry(20, 0, 30);
     const canvasMaterial = new THREE.MeshStandardMaterial({
