@@ -219,6 +219,7 @@ async function init() {
   controls.minDistance = 110.0;
   controls.maxDistance = 300.0;
   controls.enableDamping = true;
+  controls.zoomSpeed = 0.69;
   controls.rotateSpeed = 0.36;
   controls.dampingFactor = 0.05;
   controls.update();
