@@ -25,7 +25,8 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 // UI initial states
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.69;
+// TODO: Turn up background music for production
+backgroundMusic.volume = 0.0;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -173,9 +174,10 @@ async function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
-  controls.minDistance = 40.0;
+  controls.minDistance = 110.0;
   controls.maxDistance = 300.0;
   controls.enableDamping = true;
+  controls.rotateSpeed = 0.36;
   controls.dampingFactor = 0.05;
   controls.update();
 
@@ -207,7 +209,7 @@ function render() {
 
 function panToCenter() {
   const targetPosition = controls.target.clone();
-  const initialPosition = new THREE.Vector3(690, 1000, 0);
+  const initialPosition = new THREE.Vector3(300, 300, 0);
   camera.position.copy(initialPosition);
   controls.update();
 
@@ -219,9 +221,10 @@ function panToCenter() {
 
   gsap.to(camera.position, {
     x: finalPosition.x,
-    y: finalPosition.y,
+    y: finalPosition.y - 5,
     z: finalPosition.z,
-    duration: 6.9, // Duration in seconds
+    // TODO: Change back to 6.9 seconds for production
+    duration: 0.9, // Duration in seconds
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update(); // Update the controls during the animation
