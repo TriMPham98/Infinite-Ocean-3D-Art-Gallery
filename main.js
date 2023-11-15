@@ -106,11 +106,20 @@ async function init() {
   const circleRadius = 69;
   const canvasYPosition = 18;
 
+  // Texture Loader
+  const loader = new THREE.TextureLoader();
+
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2; // Angle for each canvas
 
+    // Load a unique texture for each canvas
+    const texture = loader.load("/assets/image" + i + ".jpg"); // Replace with actual paths
+
     const canvasGeometry = new THREE.BoxGeometry(20, 1, 30);
-    const canvasMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const canvasMaterial = new THREE.MeshStandardMaterial({
+      map: texture,
+      side: THREE.FrontSide
+    });
 
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
     canvas.rotation.x = Math.PI / 2;
