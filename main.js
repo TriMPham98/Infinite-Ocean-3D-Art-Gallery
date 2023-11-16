@@ -26,7 +26,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
 // TODO: Turn up background music for production
-backgroundMusic.volume = 0.0;
+backgroundMusic.volume = 0.00;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -119,6 +119,7 @@ async function init() {
 
   // Texture Loader
   const loader = new THREE.TextureLoader();
+  const marbleTexture = loader.load("/assets/whiteMarble.jpg")
 
   // Constants
   const frameDepth = 1.0; // The depth of the frame
@@ -135,7 +136,7 @@ async function init() {
       frameDepth,
       30 + frameOffset * 2
     );
-    const frameMaterial = new THREE.MeshBasicMaterial({ color: 0xf8f8ff });
+    const frameMaterial = new THREE.MeshStandardMaterial({ map: marbleTexture });
     const frame = new THREE.Mesh(frameGeometry, frameMaterial);
 
     frame.rotation.x = Math.PI / 2;
