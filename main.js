@@ -194,7 +194,7 @@ async function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
-  controls.minDistance = 102.0;
+  controls.minDistance = 110.0;
   controls.maxDistance = 300.0;
   controls.enableDamping = true;
   controls.zoomSpeed = 0.69;
@@ -254,7 +254,7 @@ function moveToCanvas(index) {
     x: canvasPositions[currentCanvasIndex].x,
     y: canvasPositions[currentCanvasIndex].y + 1.3,
     z: canvasPositions[currentCanvasIndex].z,
-    duration: 2.5,
+    duration: 2.0,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
