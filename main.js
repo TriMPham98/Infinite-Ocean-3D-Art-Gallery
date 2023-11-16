@@ -1,68 +1,58 @@
-// Style import
 import "./style.css";
-
-// Three.js core and additional components
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 import { gsap } from "gsap";
 
-// Scene, camera, and renderer declarations
 let camera, scene, renderer;
 let controls, water, sun;
+let canvasPositions = [];
+const numberOfCanvases = 12;
+let currentCanvasIndex = 0;
 
-// Initialization function to set up the scene
 init();
 
-// DOM elements for UI controls
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
-const canvas = renderer.domElement;
-const backgroundMusic = document.getElementById("background-music"); // Get the audio element
-const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a reference to the volume toggle button
+const canvasElement = renderer.domElement;
+const backgroundMusic = document.getElementById("background-music");
+const volumeToggleBtn = document.getElementById("volume-toggle");
 
-// UI initial states
-canvas.style.opacity = 0;
-canvas.style.transition = "opacity 2s ease";
-// TODO: Turn up background music for production
+canvasElement.style.opacity = 0;
+canvasElement.style.transition = "opacity 2s ease";
 backgroundMusic.volume = 0.0;
 backgroundMusic.loop = true;
 
-// Event listeners for UI interactions
 startButton.addEventListener("click", function () {
-  // Start fading out the loading screen and fading in the scene
   loadingScreen.classList.add("hidden");
-  canvas.style.opacity = 1;
-
-  // Start the animation loop
+  canvasElement.style.opacity = 1;
   animate();
-
-  // Play the background music
   backgroundMusic.play();
 });
 
 function toggleMusic() {
   if (backgroundMusic.volume > 0) {
-    backgroundMusic.volume = 0; // Mute the music
-    volumeToggleBtn.textContent = "Unmute Music"; // Update the button text
+    backgroundMusic.volume = 0;
+    volumeToggleBtn.textContent = "Unmute Music";
   } else {
-    backgroundMusic.volume = 0.69; // Restore the volume
-    volumeToggleBtn.textContent = "Mute Music"; // Update the button text
+    backgroundMusic.volume = 0.69;
+    volumeToggleBtn.textContent = "Mute Music";
   }
 }
 
-// Event listener for the button click
 volumeToggleBtn.addEventListener("click", toggleMusic);
 
-// Event listener for the 'm' keydown
 window.addEventListener("keydown", function (event) {
   if (event.key === "m" || event.key === "M") {
     toggleMusic();
+  } else if (event.key === "ArrowRight") {
+    moveToCanvas(currentCanvasIndex - 1);
+  } else if (event.key === "ArrowLeft") {
+    moveToCanvas(currentCanvasIndex + 1);
   }
 });
 
-// Initialize the scene, camera, and objects
 async function init() {
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -74,10 +64,8 @@ async function init() {
     .getElementById("start-button")
     .addEventListener("click", panToCenter);
 
-  // Scene setup
   scene = new THREE.Scene();
 
-  // Camera setup
   camera = new THREE.PerspectiveCamera(
     55,
     window.innerWidth / window.innerHeight,
@@ -86,12 +74,9 @@ async function init() {
   );
   camera.position.set(0, 0, 0);
 
-  // Sun vector for lighting
   sun = new THREE.Vector3();
 
-  // Water object creation
   const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
-
   water = new Water(waterGeometry, {
     textureWidth: 512,
     textureHeight: 512,
@@ -109,28 +94,18 @@ async function init() {
   });
 
   water.rotation.x = -Math.PI / 2;
-
   scene.add(water);
 
-  // Constants for circle arrangement
-  const numberOfCanvases = 12;
   const circleRadius = 69;
   const canvasYPosition = 20;
-
-  // Texture Loader
   const loader = new THREE.TextureLoader();
   const marbleTexture = loader.load("/assets/whiteMarble.jpg");
+  const frameDepth = 1.0;
+  const frameOffset = 1.5;
+  const frameRadius = circleRadius - 0.51;
 
-  // Constants
-  const frameDepth = 1.0; // The depth of the frame
-  const frameOffset = 1.5; // How much larger the frame is than the canvas
-  const frameRadius = circleRadius - 0.51; // Make the frame radius slightly smaller
-
-  // Create frames in the first loop
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
-
-    // Frame geometry is slightly larger than the canvas
     const frameGeometry = new THREE.BoxGeometry(
       20 + frameOffset * 2,
       frameDepth,
@@ -140,48 +115,37 @@ async function init() {
       map: marbleTexture,
     });
     const frame = new THREE.Mesh(frameGeometry, frameMaterial);
-
     frame.rotation.x = Math.PI / 2;
     frame.rotation.z = angle - Math.PI / 2;
-
-    // Position the frame slightly behind the canvas's position
     frame.position.set(
       frameRadius * Math.cos(angle),
       canvasYPosition - frameDepth / 2 + 0.5,
       frameRadius * Math.sin(angle)
     );
-
     scene.add(frame);
   }
 
-  // Create canvases in the second loop
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
-
-    // Load a unique texture for each canvas
     const texture = loader.load("/assets/image" + i + ".jpg");
-
     const canvasGeometry = new THREE.BoxGeometry(20, 0, 30);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
       side: THREE.FrontSide,
     });
-
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
     canvas.rotation.x = Math.PI / 2;
     canvas.rotation.z = angle - Math.PI / 2;
-
-    // Positioning canvas in a circle
-    canvas.position.set(
-      circleRadius * Math.cos(angle), // x position
-      canvasYPosition, // y position
-      circleRadius * Math.sin(angle) // z position
+    const position = new THREE.Vector3(
+      circleRadius * Math.cos(angle),
+      canvasYPosition,
+      circleRadius * Math.sin(angle)
     );
-
+    canvas.position.copy(position);
+    canvasPositions.push(position);
     scene.add(canvas);
   }
 
-  // Skybox creation
   const sky = new Sky();
   sky.scale.setScalar(10000);
   scene.add(sky);
@@ -193,29 +157,20 @@ async function init() {
   skyUniforms["mieCoefficient"].value = 0.005;
   skyUniforms["mieDirectionalG"].value = 0.8;
 
-  const parameters = {
-    elevation: 0.69,
-    azimuth: -150,
-  };
-
+  const parameters = { elevation: 0.69, azimuth: -150 };
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
 
   function updateSun() {
     const phi = THREE.MathUtils.degToRad(90 - parameters.elevation);
     const theta = THREE.MathUtils.degToRad(parameters.azimuth);
-
     sun.setFromSphericalCoords(1, phi, theta);
-
     sky.material.uniforms["sunPosition"].value.copy(sun);
     water.material.uniforms["sunDirection"].value.copy(sun).normalize();
-
     scene.environment = pmremGenerator.fromScene(sky).texture;
   }
 
-  // Sun update function call
   updateSun();
 
-  // Controls for user interaction
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
@@ -227,19 +182,15 @@ async function init() {
   controls.dampingFactor = 0.05;
   controls.update();
 
-  // Event listener for window resize
   window.addEventListener("resize", onWindowResize);
 }
 
-// Window resize handler
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Animation loop
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
@@ -247,10 +198,8 @@ function animate() {
   logCameraPosition();
 }
 
-// Render function
 function render() {
   water.material.uniforms["time"].value += 0.69 / 60.0;
-
   renderer.render(scene, camera);
 }
 
@@ -258,18 +207,15 @@ function panToCenter() {
   const initialPosition = new THREE.Vector3(300, 300, -300);
   camera.position.copy(initialPosition);
   controls.update();
-
   const finalPosition = new THREE.Vector3(108.0, 27.8, 0.0);
-
   gsap.to(camera.position, {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    // TODO: Change back to 6.9 seconds for production
-    duration: 6.9, // Duration in seconds
+    duration: 6.9,
     ease: "power2.inOut",
     onUpdate: function () {
-      controls.update(); // Update the controls during the animation
+      controls.update();
     },
   });
 }
@@ -280,4 +226,18 @@ function logCameraPosition() {
       1
     )}, y: ${camera.position.y.toFixed(1)}, z: ${camera.position.z.toFixed(1)}`
   );
+}
+
+function moveToCanvas(index) {
+  currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
+  gsap.to(camera.position, {
+    x: canvasPositions[currentCanvasIndex].x,
+    y: canvasPositions[currentCanvasIndex].y + 1.30, // Adjust Y offset as needed
+    z: canvasPositions[currentCanvasIndex].z, // Adjust Z offset to be in front of the canvas
+    duration: 2,
+    ease: "power2.inOut",
+    onUpdate: function () {
+      controls.update();
+    },
+  });
 }
