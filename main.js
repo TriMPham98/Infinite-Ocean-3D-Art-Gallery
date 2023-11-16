@@ -145,7 +145,7 @@ async function init() {
     // Position the frame slightly behind the canvas's position
     frame.position.set(
       frameRadius * Math.cos(angle),
-      canvasYPosition - frameDepth / 2, // This will set the frame behind the canvas
+      canvasYPosition - frameDepth / 2 + 0.5,
       frameRadius * Math.sin(angle)
     );
 
