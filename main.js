@@ -111,6 +111,8 @@ async function init() {
 
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
+
+    // Frame
     const frameGeometry = new THREE.BoxGeometry(
       20 + frameOffset * 2,
       frameDepth,
@@ -128,11 +130,8 @@ async function init() {
       frameRadius * Math.sin(angle)
     );
     scene.add(frame);
-  }
 
-  for (let i = 0; i < numberOfCanvases; i++) {
-    const angle = (i / numberOfCanvases) * Math.PI * 2;
-
+    // Light
     const rectLight = new THREE.RectAreaLight(
       lightColor,
       lightIntensity,
@@ -146,10 +145,8 @@ async function init() {
     );
     rectLight.lookAt(new THREE.Vector3(0, canvasYPosition, 0));
     scene.add(rectLight);
-  }
 
-  for (let i = 0; i < numberOfCanvases; i++) {
-    const angle = (i / numberOfCanvases) * Math.PI * 2;
+    // Canvas
     const texture = loader.load("/assets/image" + i + ".jpg");
     const canvasGeometry = new THREE.BoxGeometry(20, 0, 30);
     const canvasMaterial = new THREE.MeshStandardMaterial({
@@ -235,7 +232,7 @@ function panToCenter() {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    duration: 0.9,
+    duration: 6.9,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
