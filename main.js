@@ -21,7 +21,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle");
 
 canvasElement.style.opacity = 0;
 canvasElement.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.0;
+backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
 startButton.addEventListener("click", function () {
@@ -254,7 +254,7 @@ function moveToCanvas(index) {
     x: canvasPositions[currentCanvasIndex].x,
     y: canvasPositions[currentCanvasIndex].y + 1.3,
     z: canvasPositions[currentCanvasIndex].z,
-    duration: 2.0,
+    duration: 1.69,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
