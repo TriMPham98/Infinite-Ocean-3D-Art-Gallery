@@ -26,7 +26,7 @@ const volumeToggleBtn = document.getElementById("volume-toggle"); // Add a refer
 canvas.style.opacity = 0;
 canvas.style.transition = "opacity 2s ease";
 // TODO: Turn up background music for production
-backgroundMusic.volume = 0.00;
+backgroundMusic.volume = 0.0;
 backgroundMusic.loop = true;
 
 // Event listeners for UI interactions
@@ -119,12 +119,12 @@ async function init() {
 
   // Texture Loader
   const loader = new THREE.TextureLoader();
-  const marbleTexture = loader.load("/assets/whiteMarble.jpg")
+  const marbleTexture = loader.load("/assets/whiteMarble.jpg");
 
   // Constants
   const frameDepth = 1.0; // The depth of the frame
   const frameOffset = 1.5; // How much larger the frame is than the canvas
-  const frameRadius = circleRadius - 0.510; // Make the frame radius slightly smaller
+  const frameRadius = circleRadius - 0.51; // Make the frame radius slightly smaller
 
   // Create frames in the first loop
   for (let i = 0; i < numberOfCanvases; i++) {
@@ -136,7 +136,9 @@ async function init() {
       frameDepth,
       30 + frameOffset * 2
     );
-    const frameMaterial = new THREE.MeshStandardMaterial({ map: marbleTexture });
+    const frameMaterial = new THREE.MeshStandardMaterial({
+      map: marbleTexture,
+    });
     const frame = new THREE.Mesh(frameGeometry, frameMaterial);
 
     frame.rotation.x = Math.PI / 2;
@@ -242,6 +244,7 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   render();
+  logCameraPosition();
 }
 
 // Render function
@@ -252,20 +255,15 @@ function render() {
 }
 
 function panToCenter() {
-  const targetPosition = controls.target.clone();
   const initialPosition = new THREE.Vector3(300, 300, 0);
   camera.position.copy(initialPosition);
   controls.update();
 
-  const finalPosition = new THREE.Vector3(
-    targetPosition.x,
-    targetPosition.y + 10,
-    targetPosition.z + 50
-  );
+  const finalPosition = new THREE.Vector3(108, 27, -0.3);
 
   gsap.to(camera.position, {
     x: finalPosition.x,
-    y: finalPosition.y - 3,
+    y: finalPosition.y,
     z: finalPosition.z,
     // TODO: Change back to 6.9 seconds for production
     duration: 6.9, // Duration in seconds
@@ -274,4 +272,12 @@ function panToCenter() {
       controls.update(); // Update the controls during the animation
     },
   });
+}
+
+function logCameraPosition() {
+  console.log(
+    `Camera Position - x: ${camera.position.x.toFixed(
+      1
+    )}, y: ${camera.position.y.toFixed(1)}, z: ${camera.position.z.toFixed(1)}`
+  );
 }
