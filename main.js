@@ -141,7 +141,7 @@ async function init() {
     );
     rectLight.position.set(
       lightRadius * Math.cos(angle),
-      canvasYPosition - frameDepth / 2,
+      canvasYPosition,
       lightRadius * Math.sin(angle)
     );
     rectLight.lookAt(new THREE.Vector3(0, canvasYPosition, 0));
