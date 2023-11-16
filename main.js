@@ -124,7 +124,7 @@ async function init() {
   // Constants
   const frameDepth = 1.0; // The depth of the frame
   const frameOffset = 1.5; // How much larger the frame is than the canvas
-  const frameRadius = circleRadius - 1; // Make the frame radius slightly smaller
+  const frameRadius = circleRadius - 0.510; // Make the frame radius slightly smaller
 
   // Create frames in the first loop
   for (let i = 0; i < numberOfCanvases; i++) {
