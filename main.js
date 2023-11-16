@@ -232,9 +232,9 @@ function moveToCanvas(index) {
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
   gsap.to(camera.position, {
     x: canvasPositions[currentCanvasIndex].x,
-    y: canvasPositions[currentCanvasIndex].y + 1.30, // Adjust Y offset as needed
-    z: canvasPositions[currentCanvasIndex].z, // Adjust Z offset to be in front of the canvas
-    duration: 2,
+    y: canvasPositions[currentCanvasIndex].y + 1.3,
+    z: canvasPositions[currentCanvasIndex].z,
+    duration: 2.5,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
