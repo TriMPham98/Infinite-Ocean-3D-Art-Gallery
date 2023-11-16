@@ -103,6 +103,10 @@ async function init() {
   const frameDepth = 1.0;
   const frameOffset = 1.5;
   const frameRadius = circleRadius - 0.51;
+  const lightIntensity = 1.5; // Adjust the intensity as needed
+  const lightWidth = 20; // Match or slightly larger than the frame width
+  const lightHeight = 30; // Match or slightly larger than the frame height
+  const lightColor = 0xffe8c3; // Warm light color
 
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
@@ -123,6 +127,20 @@ async function init() {
       frameRadius * Math.sin(angle)
     );
     scene.add(frame);
+
+    const rectLight = new THREE.RectAreaLight(
+      lightColor,
+      lightIntensity,
+      lightWidth,
+      lightHeight
+    );
+    rectLight.position.set(
+      frameRadius * Math.cos(angle),
+      canvasYPosition - frameDepth / 2,
+      frameRadius * Math.sin(angle)
+    );
+    rectLight.lookAt(new THREE.Vector3(0, canvasYPosition, 0)); // Make the light face the center
+    scene.add(rectLight);
   }
 
   for (let i = 0; i < numberOfCanvases; i++) {
@@ -212,7 +230,7 @@ function panToCenter() {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    duration: 6.9,
+    duration: 0.9,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
