@@ -106,8 +106,8 @@ async function init() {
   const lightRadius = frameRadius + 1.0;
   const lightIntensity = 1.5;
   const lightWidth = 20.5;
-  const lightHeight = 30.25;
-  const lightColor = 0xffe8c3;
+  const lightHeight = 30.5;
+  const lightColor = 0xffddb4;
 
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
