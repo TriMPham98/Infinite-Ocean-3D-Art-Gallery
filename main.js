@@ -219,7 +219,7 @@ async function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
-  controls.minDistance = 110.0;
+  controls.minDistance = 102.0;
   controls.maxDistance = 300.0;
   controls.enableDamping = true;
   controls.zoomSpeed = 0.69;
@@ -255,11 +255,11 @@ function render() {
 }
 
 function panToCenter() {
-  const initialPosition = new THREE.Vector3(300, 300, 0);
+  const initialPosition = new THREE.Vector3(300, 300, -300);
   camera.position.copy(initialPosition);
   controls.update();
 
-  const finalPosition = new THREE.Vector3(108, 27, -0.3);
+  const finalPosition = new THREE.Vector3(108.0, 27.8, 0.0);
 
   gsap.to(camera.position, {
     x: finalPosition.x,
