@@ -146,6 +146,8 @@ async function init() {
     rectLight.lookAt(new THREE.Vector3(0, canvasYPosition, 0));
     scene.add(rectLight);
 
+    createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
+
     // Canvas
     const texture = loader.load("/assets/image" + i + ".jpg");
     const canvasGeometry = new THREE.BoxGeometry(20, 0, 30);
@@ -259,5 +261,16 @@ function moveToCanvas(index) {
     onUpdate: function () {
       controls.update();
     },
+  });
+}
+
+function createPulseAnimation(light, minIntensity, maxIntensity, duration) {
+  light.intensity = minIntensity;
+  gsap.to(light, {
+    intensity: maxIntensity,
+    duration: duration,
+    repeat: -1,
+    yoyo: true,
+    ease: "power1.inOut",
   });
 }
