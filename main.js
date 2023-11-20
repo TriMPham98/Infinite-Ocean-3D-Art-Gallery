@@ -217,7 +217,7 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   render();
-  logCameraPosition();
+  // logCameraPosition();
 }
 
 function render() {
