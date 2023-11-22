@@ -7,8 +7,8 @@ html,
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Hide scroll bars */
-  height: 100vh; /* Prevent vertical scrolling */
+  overflow: hidden;
+  height: 100vh;
 }
 
 #loading-screen {
@@ -24,11 +24,11 @@ body {
 }
 
 #loading-screen #start-button {
-  position: relative; /* Position relative so that pseudo-elements can be positioned absolutely within */
-  overflow: hidden; /* Ensures pseudo-elements don't overflow */
+  position: relative;
+  overflow: hidden;
   background-color: black;
   color: white;
-  border: 2px solid transparent; /* Make border transparent initially */
+  border: 2px solid transparent;
   padding: 10px 20px;
   font-size: 69px;
   cursor: pointer;
@@ -45,19 +45,16 @@ body {
   bottom: 0;
 }
 
-/* Use the button's ::before and ::after for top and bottom borders */
 #loading-screen #start-button::before,
 #loading-screen #start-button::after,
 #loading-screen #start-button span::before,
 #loading-screen #start-button span::after {
   content: "";
   position: absolute;
-  /* Initial gradient background */
   background-color: white;
   transition: transform 0.5s ease;
 }
 
-/* Define top and bottom border lengths and positions */
 #loading-screen #start-button::before,
 #loading-screen #start-button::after {
   left: 0;
@@ -73,10 +70,9 @@ body {
 
 #loading-screen #start-button::after {
   bottom: 0;
-  transform-origin: right; /* Origin from right for bottom border */
+  transform-origin: right;
 }
 
-/* Define left and right border lengths and positions */
 #loading-screen #start-button span::before,
 #loading-screen #start-button span::after {
   top: 0;
@@ -91,10 +87,9 @@ body {
 
 #loading-screen #start-button span::after {
   right: 0;
-  transform-origin: bottom; /* Origin from bottom for right border */
+  transform-origin: bottom;
 }
 
-/* Hover effects */
 #loading-screen #start-button:hover::before,
 #loading-screen #start-button:hover::after {
   transform: scaleX(1);
