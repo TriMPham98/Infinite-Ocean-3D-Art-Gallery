@@ -292,6 +292,7 @@ function onCanvasClick(event) {
     if (canvases.includes(intersects[i].object)) {
       const canvasIndex = canvases.indexOf(intersects[i].object);
       console.log("Canvas index clicked:", canvasIndex);
+      moveToCanvas(canvasIndex); // Call moveToCanvas here
     }
   }
 }
