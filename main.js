@@ -8,6 +8,8 @@ import { gsap } from "gsap";
 let camera, scene, renderer;
 let controls, water, sun;
 let canvasPositions = [];
+let raycaster, mouse;
+let canvases = [];
 const numberOfCanvases = 12;
 let currentCanvasIndex = 0;
 
@@ -59,6 +61,8 @@ async function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   document.body.appendChild(renderer.domElement);
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
 
   document
     .getElementById("start-button")
@@ -166,6 +170,7 @@ async function init() {
     canvas.position.copy(position);
     canvasPositions.push(position);
     scene.add(canvas);
+    canvases.push(canvas);
   }
 
   const sky = new Sky();
@@ -273,4 +278,32 @@ function createPulseAnimation(light, minIntensity, maxIntensity, duration) {
     yoyo: true,
     ease: "power1.inOut",
   });
+}
+
+canvasElement.addEventListener("click", onCanvasClick);
+canvasElement.addEventListener("mousemove", onCanvasHover);
+
+function onCanvasClick(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children);
+  for (let i = 0; i < intersects.length; i++) {
+    if (canvases.includes(intersects[i].object)) {
+      const canvasIndex = canvases.indexOf(intersects[i].object);
+      console.log("Canvas index clicked:", canvasIndex);
+    }
+  }
+}
+
+function onCanvasHover(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(canvases);
+  if (intersects.length > 0) {
+    canvasElement.style.cursor = "pointer";
+  } else {
+    canvasElement.style.cursor = "default";
+  }
 }
