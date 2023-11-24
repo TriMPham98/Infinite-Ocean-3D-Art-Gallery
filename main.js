@@ -294,14 +294,17 @@ function onCanvasClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children);
-  for (let i = 0; i < intersects.length; i++) {
-    if (canvases.includes(intersects[i].object)) {
-      selectSound.play();
-      const canvasIndex = canvases.indexOf(intersects[i].object);
-      console.log("Canvas index clicked:", canvasIndex);
-      moveToCanvas(canvasIndex); // Call moveToCanvas here
-    }
+  const intersects = raycaster
+    .intersectObjects(scene.children)
+    .filter((intersect) => canvases.includes(intersect.object));
+
+  if (intersects.length > 0) {
+    intersects.sort((a, b) => a.distance - b.distance);
+    const closestCanvas = intersects[0].object;
+    const canvasIndex = canvases.indexOf(closestCanvas);
+    console.log("Canvas index clicked:", canvasIndex);
+    moveToCanvas(canvasIndex);
+    selectSound.play();
   }
 }
 
