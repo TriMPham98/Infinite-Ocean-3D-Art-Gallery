@@ -142,12 +142,12 @@ body {
   color: white;
   border: 2px solid white;
   padding: 10px 20px;
-  font-size: 20px; /* Adjust as necessary for your design */
+  font-size: 20px;
   cursor: pointer;
   border-radius: 5px;
   font-family: "Montserrat", sans-serif;
   transition: background-color 0.3s ease;
-  margin: 5px; /* Spacing between buttons */
+  margin: 5px;
   cursor: default;
 }
 
