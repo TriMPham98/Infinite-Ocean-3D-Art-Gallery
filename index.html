@@ -20,13 +20,26 @@
     <div id="loading-screen">
       <button id="start-button">
         <span></span>
-        <!-- Invisible span for additional pseudo-elements -->
         Enter Art Gallery
       </button>
       <audio
         id="background-music"
         src="assets/zenPiano.mp3"
         type="audio/mp3"></audio>
+      <div id="control-panel">
+        <button id="toggle-sound" class="control-button">
+          <span></span>
+          m = Toggle Sound
+        </button>
+        <button id="move-left" class="control-button">
+          <span></span>
+          &#8592; = Move Left
+        </button>
+        <button id="move-right" class="control-button">
+          <span></span>
+          &#8594; = Move Right
+        </button>
+      </div>
     </div>
     <div id="app"></div>
     <button id="volume-toggle">Toggle Sound</button>

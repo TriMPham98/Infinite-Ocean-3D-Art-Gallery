@@ -122,3 +122,39 @@ body {
 #volume-toggle:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+#control-panel {
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.control-button {
+  position: relative;
+  overflow: hidden;
+  background-color: black;
+  color: white;
+  border: 2px solid white;
+  padding: 10px 20px;
+  font-size: 20px; /* Adjust as necessary for your design */
+  cursor: pointer;
+  border-radius: 5px;
+  font-family: "Montserrat", sans-serif;
+  transition: background-color 0.3s ease;
+  margin: 5px; /* Spacing between buttons */
+  cursor: default;
+}
+
+.control-button span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
