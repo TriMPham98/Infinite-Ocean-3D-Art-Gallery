@@ -20,6 +20,8 @@ const loadingScreen = document.getElementById("loading-screen");
 const canvasElement = renderer.domElement;
 const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
+const selectSound = new Audio("/assets/modernSelect.wav");
+selectSound.volume = 0.15;
 
 canvasElement.style.opacity = 0;
 canvasElement.style.transition = "opacity 2s ease";
@@ -27,6 +29,7 @@ backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
 startButton.addEventListener("click", function () {
+  selectSound.play();
   loadingScreen.classList.add("hidden");
   canvasElement.style.opacity = 1;
   animate();
@@ -36,10 +39,12 @@ startButton.addEventListener("click", function () {
 function toggleMusic() {
   if (backgroundMusic.volume > 0) {
     backgroundMusic.volume = 0;
-    volumeToggleBtn.textContent = "Unmute Music";
+    selectSound.volume = 0;
+    volumeToggleBtn.textContent = "Unmute Sound";
   } else {
+    selectSound.volume = 0.15;
     backgroundMusic.volume = 0.69;
-    volumeToggleBtn.textContent = "Mute Music";
+    volumeToggleBtn.textContent = "Mute Sound";
   }
 }
 
@@ -49,8 +54,10 @@ window.addEventListener("keydown", function (event) {
   if (event.key === "m" || event.key === "M") {
     toggleMusic();
   } else if (event.key === "ArrowRight") {
+    selectSound.play();
     moveToCanvas(currentCanvasIndex - 1);
   } else if (event.key === "ArrowLeft") {
+    selectSound.play();
     moveToCanvas(currentCanvasIndex + 1);
   }
 });
@@ -290,6 +297,7 @@ function onCanvasClick(event) {
   const intersects = raycaster.intersectObjects(scene.children);
   for (let i = 0; i < intersects.length; i++) {
     if (canvases.includes(intersects[i].object)) {
+      selectSound.play();
       const canvasIndex = canvases.indexOf(intersects[i].object);
       console.log("Canvas index clicked:", canvasIndex);
       moveToCanvas(canvasIndex); // Call moveToCanvas here
