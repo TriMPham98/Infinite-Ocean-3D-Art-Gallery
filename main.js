@@ -319,3 +319,5 @@ function onCanvasHover(event) {
     canvasElement.style.cursor = "default";
   }
 }
+
+// TODO: Make the Sun clickable as an Easter Egg to make it night mode
