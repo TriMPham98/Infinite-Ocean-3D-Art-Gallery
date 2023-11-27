@@ -361,8 +361,8 @@ function toggleNightMode() {
     // Transition to night mode
     gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3 });
     gsap.to(skyUniforms["rayleigh"], { value: 0.069, duration: 3 });
-    gsap.to(skyUniforms["mieCoefficient"], { value: 0, duration: 3 });
-    gsap.to(skyUniforms["mieDirectionalG"], { value: 0, duration: 3 });
+    gsap.to(skyUniforms["mieCoefficient"], { value: 1.1, duration: 3 });
+    gsap.to(skyUniforms["mieDirectionalG"], { value: -1.1, duration: 3 });
   }
   isNightMode = !isNightMode;
   console.log("(After click) Night mode: " + isNightMode);
