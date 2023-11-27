@@ -5,7 +5,7 @@ import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 import { gsap } from "gsap";
 
-let camera, scene, renderer;
+let camera, scene, renderer, sunMesh;
 let controls, water, sun;
 let canvasPositions = [];
 let raycaster, mouse;
@@ -206,8 +206,12 @@ async function init() {
   updateSun();
 
   const sunGeometry = new THREE.SphereGeometry(1000, 32, 32);
-  const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-  const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+  const sunMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+  });
+  sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
   sunMesh.position.set(-31200, 1000, -54000);
   scene.add(sunMesh);
 
