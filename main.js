@@ -347,7 +347,7 @@ function onCanvasHover(event) {
 }
 
 // TODO: Add moon object when night mode
-// TODO: Modify gsap animations when toggling night mode
+// TODO: Make canvas frame rectLight cooler when night mode is toggled
 
 function toggleNightMode() {
   if (isNightMode) {
@@ -359,7 +359,7 @@ function toggleNightMode() {
   } else {
     // Transition to night mode
     gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3 });
-    gsap.to(skyUniforms["rayleigh"], { value: 0.05, duration: 3 });
+    gsap.to(skyUniforms["rayleigh"], { value: 0.069, duration: 3 });
     gsap.to(skyUniforms["mieCoefficient"], { value: 0, duration: 3 });
     gsap.to(skyUniforms["mieDirectionalG"], { value: 0, duration: 3 });
   }
