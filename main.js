@@ -89,7 +89,7 @@ async function init() {
 
   sun = new THREE.Vector3();
 
-  const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
+  const waterGeometry = new THREE.PlaneGeometry(50000, 50000);
   water = new Water(waterGeometry, {
     textureWidth: 512,
     textureHeight: 512,
