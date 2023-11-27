@@ -351,6 +351,8 @@ function onCanvasHover(event) {
 // TODO: Add stars when night mode is toggled
 // TODO: Experiment with easing options for gsap
 
+// TODO: Add plaque for artist contribution
+
 function toggleNightMode() {
   if (isNightMode) {
     // Transition to day mode
