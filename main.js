@@ -347,21 +347,23 @@ function onCanvasHover(event) {
 }
 
 // TODO: Add moon object when night mode
-// TODO: Remove sunlight when clicked and readd when moon is up
+// TODO: Modify gsap animations when toggling night mode
 
 function toggleNightMode() {
   if (isNightMode) {
-    skyUniforms["turbidity"].value = 10;
-    skyUniforms["rayleigh"].value = 2;
-    skyUniforms["mieCoefficient"].value = 0.005;
-    skyUniforms["mieDirectionalG"].value = 0.8;
+    // Transition to day mode
+    gsap.to(skyUniforms["turbidity"], { value: 10, duration: 3 });
+    gsap.to(skyUniforms["rayleigh"], { value: 2, duration: 3 });
+    gsap.to(skyUniforms["mieCoefficient"], { value: 0.005, duration: 3 });
+    gsap.to(skyUniforms["mieDirectionalG"], { value: 0.8, duration: 3 });
   } else {
-    skyUniforms["turbidity"].value = 0;
-    skyUniforms["rayleigh"].value = 0.0000001;
-    skyUniforms["mieCoefficient"].value = 0.000;
-    skyUniforms["mieDirectionalG"].value = 0.0;
+    // Transition to night mode
+    gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3 });
+    gsap.to(skyUniforms["rayleigh"], { value: 0.05, duration: 3 });
+    gsap.to(skyUniforms["mieCoefficient"], { value: 0, duration: 3 });
+    gsap.to(skyUniforms["mieDirectionalG"], { value: 0, duration: 3 });
   }
   isNightMode = !isNightMode;
   console.log("(After click) Night mode: " + isNightMode);
-  console.log("")
+  console.log("");
 }
