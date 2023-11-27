@@ -13,6 +13,7 @@ let canvases = [];
 const numberOfCanvases = 12;
 let currentCanvasIndex = 0;
 let isNightMode = false;
+let skyUniforms;
 
 init();
 
@@ -26,7 +27,7 @@ selectSound.volume = 0.15;
 
 canvasElement.style.opacity = 0;
 canvasElement.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.00; // TODO: set volume to 0.69 for production
+backgroundMusic.volume = 0.0; // TODO: set volume to 0.69 for production
 backgroundMusic.loop = true;
 
 startButton.addEventListener("click", function () {
@@ -185,7 +186,7 @@ async function init() {
   sky.scale.setScalar(10000);
   scene.add(sky);
 
-  const skyUniforms = sky.material.uniforms;
+  skyUniforms = sky.material.uniforms;
 
   skyUniforms["turbidity"].value = 10;
   skyUniforms["rayleigh"].value = 2;
@@ -321,6 +322,7 @@ function onCanvasClick(event) {
   const sunIntersects = raycaster.intersectObject(sunMesh);
   if (sunIntersects.length > 0) {
     selectSound.play();
+    console.log("(Before click) Night mode: " + isNightMode);
     console.log("Sun is clicked");
     toggleNightMode();
   }
@@ -349,8 +351,17 @@ function onCanvasHover(event) {
 
 function toggleNightMode() {
   if (isNightMode) {
+    skyUniforms["turbidity"].value = 10;
+    skyUniforms["rayleigh"].value = 2;
+    skyUniforms["mieCoefficient"].value = 0.005;
+    skyUniforms["mieDirectionalG"].value = 0.8;
   } else {
+    skyUniforms["turbidity"].value = 0;
+    skyUniforms["rayleigh"].value = 1;
+    skyUniforms["mieCoefficient"].value = 0.000;
+    skyUniforms["mieDirectionalG"].value = 0.0;
   }
   isNightMode = !isNightMode;
-  console.log("Night mode: " + isNightMode);
+  console.log("(After click) Night mode: " + isNightMode);
+  console.log("")
 }
