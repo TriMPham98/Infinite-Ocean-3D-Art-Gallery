@@ -12,6 +12,7 @@ let raycaster, mouse;
 let canvases = [];
 const numberOfCanvases = 12;
 let currentCanvasIndex = 0;
+let isDayMode = true;
 
 init();
 
@@ -347,9 +348,9 @@ function onCanvasHover(event) {
 // TODO: Remove sunlight when clicked and readd when moon is up
 
 function toggleNightMode() {
-  // Implement changes for night mode:
-  // - Adjust lighting
-  // - Change sky appearance
-  // - Any other environmental changes
-  // Switch back to day mode on second click
+  if (isDayMode) {
+  } else {
+  }
+  isDayMode = !isDayMode;
+  console.log("Day mode: " + isDayMode);
 }
