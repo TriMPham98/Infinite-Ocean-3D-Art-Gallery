@@ -357,7 +357,7 @@ function toggleNightMode() {
     skyUniforms["mieDirectionalG"].value = 0.8;
   } else {
     skyUniforms["turbidity"].value = 0;
-    skyUniforms["rayleigh"].value = 1;
+    skyUniforms["rayleigh"].value = 0.0000001;
     skyUniforms["mieCoefficient"].value = 0.000;
     skyUniforms["mieDirectionalG"].value = 0.0;
   }
