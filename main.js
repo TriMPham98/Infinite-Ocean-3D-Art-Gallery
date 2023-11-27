@@ -26,7 +26,7 @@ selectSound.volume = 0.15;
 
 canvasElement.style.opacity = 0;
 canvasElement.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.69;
+backgroundMusic.volume = 0.00; // TODO: set volume to 0.69 for production
 backgroundMusic.loop = true;
 
 startButton.addEventListener("click", function () {
@@ -257,7 +257,7 @@ function panToCenter() {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    duration: 0.9,
+    duration: 0.9, // TODO: Set duration to 6.9 for production
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
