@@ -354,16 +354,16 @@ function onCanvasHover(event) {
 function toggleNightMode() {
   if (isNightMode) {
     // Transition to day mode
-    gsap.to(skyUniforms["turbidity"], { value: 10, duration: 3 });
-    gsap.to(skyUniforms["rayleigh"], { value: 2, duration: 3 });
-    gsap.to(skyUniforms["mieCoefficient"], { value: 0.005, duration: 3 });
-    gsap.to(skyUniforms["mieDirectionalG"], { value: 0.8, duration: 3 });
+    gsap.to(skyUniforms["turbidity"], { value: 10, duration: 3.69 });
+    gsap.to(skyUniforms["rayleigh"], { value: 2, duration: 3.69 });
+    gsap.to(skyUniforms["mieCoefficient"], { value: 0.005, duration: 3.69 });
+    gsap.to(skyUniforms["mieDirectionalG"], { value: 0.8, duration: 3.69 });
   } else {
     // Transition to night mode
-    gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3 });
-    gsap.to(skyUniforms["rayleigh"], { value: 0.069, duration: 3 });
-    gsap.to(skyUniforms["mieCoefficient"], { value: 1.1, duration: 3 });
-    gsap.to(skyUniforms["mieDirectionalG"], { value: -1.1, duration: 3 });
+    gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3.69 });
+    gsap.to(skyUniforms["rayleigh"], { value: 0.069, duration: 3.69 });
+    gsap.to(skyUniforms["mieCoefficient"], { value: 1.01, duration: 3.69 });
+    gsap.to(skyUniforms["mieDirectionalG"], { value: -1.01, duration: 3.69 });
   }
   isNightMode = !isNightMode;
   console.log("(After click) Night mode: " + isNightMode);
