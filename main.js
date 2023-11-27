@@ -81,7 +81,7 @@ async function init() {
     55,
     window.innerWidth / window.innerHeight,
     1,
-    20000
+    69000
   );
   camera.position.set(0, 0, 0);
 
@@ -205,6 +205,12 @@ async function init() {
 
   updateSun();
 
+  const sunGeometry = new THREE.SphereGeometry(1000, 32, 32);
+  const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+  sunMesh.position.set(-31200, 1000, -54000);
+  scene.add(sunMesh);
+
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
@@ -246,7 +252,7 @@ function panToCenter() {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    duration: 6.9,
+    duration: 0.9,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
@@ -306,6 +312,12 @@ function onCanvasClick(event) {
     moveToCanvas(canvasIndex);
     selectSound.play();
   }
+
+  const sunIntersects = raycaster.intersectObject(sunMesh);
+  if (sunIntersects.length > 0) {
+    console.log("Sun is clicked");
+    toggleNightMode();
+  }
 }
 
 function onCanvasHover(event) {
@@ -321,3 +333,11 @@ function onCanvasHover(event) {
 }
 
 // TODO: Make the Sun clickable as an Easter Egg to make it night mode
+
+function toggleNightMode() {
+  // Implement changes for night mode:
+  // - Adjust lighting
+  // - Change sky appearance
+  // - Any other environmental changes
+  // Switch back to day mode on second click
+}
