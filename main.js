@@ -342,7 +342,8 @@ function onCanvasHover(event) {
   }
 }
 
-// TODO: Make the Sun clickable as an Easter Egg to make it night mode
+// TODO: Add moon object when night mode
+// TODO: Remove sunlight when clicked and readd when moon is up
 
 function toggleNightMode() {
   // Implement changes for night mode:
