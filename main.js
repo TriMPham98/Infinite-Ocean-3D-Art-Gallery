@@ -328,8 +328,14 @@ function onCanvasHover(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(canvases);
-  if (intersects.length > 0) {
+
+  const intersects = raycaster.intersectObjects(canvases.concat(sunMesh));
+
+  if (
+    intersects.length > 0 &&
+    (canvases.includes(intersects[0].object) ||
+      intersects[0].object === sunMesh)
+  ) {
     canvasElement.style.cursor = "pointer";
   } else {
     canvasElement.style.cursor = "default";
