@@ -312,13 +312,14 @@ function onCanvasClick(event) {
     intersects.sort((a, b) => a.distance - b.distance);
     const closestCanvas = intersects[0].object;
     const canvasIndex = canvases.indexOf(closestCanvas);
+    selectSound.play();
     console.log("Canvas index clicked:", canvasIndex);
     moveToCanvas(canvasIndex);
-    selectSound.play();
   }
 
   const sunIntersects = raycaster.intersectObject(sunMesh);
   if (sunIntersects.length > 0) {
+    selectSound.play();
     console.log("Sun is clicked");
     toggleNightMode();
   }
