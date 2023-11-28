@@ -53,7 +53,9 @@ function toggleMusic() {
 volumeToggleBtn.addEventListener("click", toggleMusic);
 
 window.addEventListener("keydown", function (event) {
-  if (event.key === "m" || event.key === "M") {
+  if (event.key === "Enter") {
+    document.getElementById("start-button").click();
+  } else if (event.key === "m" || event.key === "M") {
     toggleMusic();
   } else if (event.key === "ArrowRight") {
     selectSound.play();
