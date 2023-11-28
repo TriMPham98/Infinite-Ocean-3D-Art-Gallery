@@ -118,18 +118,28 @@ async function init() {
   const frameRadius = circleRadius - 0.51;
   const lightRadius = frameRadius + 1.0;
   const lightIntensity = 1.5;
-  const lightWidth = 20.5;
-  const lightHeight = 30.5;
+  const lightWidthEven = 20.5;
+  const lightHeightEven = 30.5;
+  const lightWidthOdd = 30.5;
+  const lightHeightOdd = 20.5;
   const lightColor = 0xffa366;
 
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
 
+    const isEven = i % 2 === 0;
+    const frameWidth = isEven ? 20 + frameOffset * 2 : 30 + frameOffset * 2;
+    const frameHeight = isEven ? 30 + frameOffset * 2 : 20 + frameOffset * 2;
+    const lightWidth = isEven ? lightWidthEven : lightWidthOdd;
+    const lightHeight = isEven ? lightHeightEven : lightHeightOdd;
+    const canvasWidth = isEven ? 20 : 30;
+    const canvasHeight = isEven ? 30 : 20;
+
     // Frame
     const frameGeometry = new THREE.BoxGeometry(
-      20 + frameOffset * 2,
+      frameWidth,
       frameDepth,
-      30 + frameOffset * 2
+      frameHeight
     );
     const frameMaterial = new THREE.MeshStandardMaterial({
       map: marbleTexture,
@@ -163,7 +173,7 @@ async function init() {
 
     // Canvas
     const texture = loader.load("/assets/image" + i + ".jpg");
-    const canvasGeometry = new THREE.BoxGeometry(20, 0, 30);
+    const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
       side: THREE.FrontSide,
