@@ -10,7 +10,7 @@ let controls, water, sun;
 let canvasPositions = [];
 let raycaster, mouse;
 let canvases = [];
-const numberOfCanvases = 12;
+const numberOfCanvases = 14;
 let currentCanvasIndex = 0;
 let isNightMode = false;
 let skyUniforms;
@@ -109,7 +109,7 @@ async function init() {
   water.rotation.x = -Math.PI / 2;
   scene.add(water);
 
-  const circleRadius = 69;
+  const circleRadius = 90;
   const canvasYPosition = 20;
   const loader = new THREE.TextureLoader();
   const marbleTexture = loader.load("/assets/whiteMarble.jpg");
