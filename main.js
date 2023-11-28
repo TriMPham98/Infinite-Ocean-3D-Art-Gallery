@@ -260,7 +260,7 @@ function render() {
 }
 
 function panToCenter() {
-  const initialPosition = new THREE.Vector3(300, 300, -300);
+  const initialPosition = new THREE.Vector3(300, 300, 690);
   camera.position.copy(initialPosition);
   controls.update();
   const finalPosition = new THREE.Vector3(138.9, 27.5, 0.0);
