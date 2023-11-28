@@ -268,7 +268,7 @@ function panToCenter() {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    duration: 0.9, // TODO: Set duration to 6.9 for production
+    duration: 6.9, // TODO: Set duration to 6.9 for production
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
@@ -372,7 +372,7 @@ function toggleNightMode() {
   } else {
     // Transition to night mode
     gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3.69 });
-    gsap.to(skyUniforms["rayleigh"], { value: 0.069, duration: 3.69 });
+    gsap.to(skyUniforms["rayleigh"], { value: 0.01, duration: 3.69 });
     gsap.to(skyUniforms["mieCoefficient"], { value: 1.01, duration: 3.69 });
     gsap.to(skyUniforms["mieDirectionalG"], { value: -1.01, duration: 3.69 });
   }
