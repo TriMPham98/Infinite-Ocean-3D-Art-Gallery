@@ -1,4 +1,10 @@
 # 3D Art Gallery
+<<<<<<< HEAD
+=======
+
+## Demo
+
+>>>>>>> 67dcb29 (Add demo section for README)
 ## CS 351 Website Development Final Project
 
 ## Art
