@@ -1,4 +1,6 @@
 # 3D Art Gallery
+## CS 351 Website Development Final Project
+
 ## Art
 Art was provided by amazing artist from CSU Eastbay.
 * Bride - Ebba Wagner
@@ -8,12 +10,12 @@ Art was provided by amazing artist from CSU Eastbay.
 * At the Gate - Liz Burkhart
 * Arrival - Liz Burkhart
 * Serene - Mykal Coleman
+  
 ## Team
 * Aimee Diaz
 * David Kromka
-
-## CS 351 Website Development Final Project
-
+  
+## Installation
 To install, clone the project and run ```npm install``` within the project directory's path in the terminal.
 
 Next, run the command ```npm i three``` to download the THREE.js library.
