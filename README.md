@@ -1,6 +1,7 @@
 # 3D Art Gallery
 
 ## CS 351 Website Development Final Project
+Aimee Diaz
 
 To install, clone the project and run ```npm install``` within the project directory's path in the terminal.
 
