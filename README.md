@@ -2,7 +2,7 @@
 ## CS 351 Website Development Final Project
 
 ## Art
-Art was provided by amazing artist from CSU Eastbay.
+Art was provided by amazing artists from CSU Eastbay.
 * Bride - Ebba Wagner
 * Waterfall - Ebba Wagner
 * Polyfall - Valentina Piraneque Ortiz
