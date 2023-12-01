@@ -1,6 +1,4 @@
 # 3D Art Gallery
-<<<<<<< HEAD
-=======
 
 ## Demo
 // TODO: Add demo video
