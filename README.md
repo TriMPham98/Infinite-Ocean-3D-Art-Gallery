@@ -29,3 +29,4 @@ Next, run the command ```npm i three``` to download the THREE.js library.
 Then, run ```npm install gsap@3.5.1``` to install camera movements.
 
 Finally, enter the command ```npm run dev``` to build the project.
+git
