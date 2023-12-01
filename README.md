@@ -1,7 +1,18 @@
 # 3D Art Gallery
+## Art
+Art was provided by amazing artist from CSU Eastbay.
+* Bride - Ebba Wagner
+* Waterfall - Ebba Wagner
+* Polyfall - Valentina Piraneque Ortiz
+* Lunar Eclipse - Valentina Piraneque Ortiz
+* At the Gate - Liz Burkhart
+* Arrival - Liz Burkhart
+* Serene - Mykal Coleman
+## Team
+* Aimee Diaz
+* David Kromka
 
 ## CS 351 Website Development Final Project
-Aimee Diaz
 
 To install, clone the project and run ```npm install``` within the project directory's path in the terminal.
 
