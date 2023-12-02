@@ -17,7 +17,7 @@ Art was provided by amazing artists from CSU Eastbay.
 * Serene - Mykal Coleman
 
 ## Photography
-Pictures were shot on Tri's Sony A7 III mirrorless camera with the Sony 85mm F1.8 prime lens and Sony G Master 100-400mm f/4.5-5.6 zoom lens.
+Pictures were shot on Tri's Sony A7 III mirrorless camera with the Sigma 24-70mm f2.8 zoom lens, Sony 85mm f1.8 prime lens, and Sony G Master 100-400mm f/4.5-5.6 zoom lens.
   
 ## Team
 * Aimee Diaz
