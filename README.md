@@ -1,9 +1,9 @@
 # 3D Art Gallery
 
+## CS 351 Website Development Final Project
+
 ## Demo
 // TODO: Add demo video
-
-## CS 351 Website Development Final Project
 
 ## Art
 Art was provided by amazing artists from CSU Eastbay.
