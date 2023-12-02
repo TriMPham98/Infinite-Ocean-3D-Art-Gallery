@@ -19,6 +19,7 @@ Art was provided by amazing artists from CSU Eastbay.
 * Aimee Diaz
 * David Kromka
 * Katrina Webb
+* Tri Pham
   
 ## Installation
 To install, clone the project and run ```npm install``` within the project directory's path in the terminal.
