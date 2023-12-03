@@ -27,7 +27,7 @@ selectSound.volume = 0.15;
 
 canvasElement.style.opacity = 0;
 canvasElement.style.transition = "opacity 2s ease";
-backgroundMusic.volume = 0.0; // TODO: set volume to 0.69 for production
+backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
 startButton.addEventListener("click", function () {
