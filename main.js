@@ -22,7 +22,7 @@ const loadingScreen = document.getElementById("loading-screen");
 const canvasElement = renderer.domElement;
 const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
-const selectSound = new Audio("/assets/modernSelect.wav");
+const selectSound = new Audio("/public/modernSelect.wav");
 selectSound.volume = 0.15;
 
 canvasElement.style.opacity = 0;
@@ -96,7 +96,7 @@ async function init() {
     textureWidth: 512,
     textureHeight: 512,
     waterNormals: new THREE.TextureLoader().load(
-      "/assets/waternormals.jpg",
+      "/public/waternormals.jpg",
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       }
@@ -114,7 +114,7 @@ async function init() {
   const circleRadius = 90;
   const canvasYPosition = 20;
   const loader = new THREE.TextureLoader();
-  const marbleTexture = loader.load("/assets/whiteMarble.jpg");
+  const marbleTexture = loader.load("/public/whiteMarble.jpg");
   const frameDepth = 1.0;
   const frameOffset = 1.5;
   const frameRadius = circleRadius - 0.51;
@@ -174,7 +174,7 @@ async function init() {
     createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
 
     // Canvas
-    const texture = loader.load("/assets/image" + i + ".jpg");
+    const texture = loader.load("/public/image" + i + ".jpg");
     const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
