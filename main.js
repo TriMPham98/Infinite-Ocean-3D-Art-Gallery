@@ -358,7 +358,6 @@ function onCanvasHover(event) {
   }
 }
 
-// TODO: Add moon object when night mode
 // TODO: Make canvas frame rectLight cooler when night mode is toggled
 // TODO: Add stars when night mode is toggled
 // TODO: Experiment with easing options for gsap
