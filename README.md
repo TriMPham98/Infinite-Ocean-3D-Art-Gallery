@@ -1,6 +1,4 @@
-# 3D Art Gallery
-
-## CS 351 Website Development Final Project
+# Infinite Ocean: 3D Art Gallery
 
 ## Demo
 
