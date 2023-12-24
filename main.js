@@ -359,7 +359,7 @@ function onCanvasHover(event) {
 }
 
 // TODO: Make canvas frame rectLight cooler when night mode is toggled
-// TODO: Add stars when night mode is toggled
+// TODO: Add star particles when night mode is toggled
 // TODO: Experiment with easing options for gsap
 // TODO: Add function to zoom in on current canvas on double click
 
