@@ -362,6 +362,7 @@ function onCanvasHover(event) {
 // TODO: Add star particles when night mode is toggled
 // TODO: Experiment with easing options for gsap
 // TODO: Add function to zoom in on current canvas on double click
+// TODO: Add loading manager to load assets before user enters art gallery
 
 function toggleNightMode() {
   if (isNightMode) {
