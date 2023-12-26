@@ -363,6 +363,7 @@ function onCanvasHover(event) {
 // TODO: Experiment with easing options for gsap
 // TODO: Add function to zoom in on current canvas on double click
 // TODO: Add loading manager to load assets before user enters art gallery
+// TODO: Add loading screen that shows progress of loading manager
 
 function toggleNightMode() {
   if (isNightMode) {
