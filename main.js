@@ -364,6 +364,7 @@ function onCanvasHover(event) {
 // TODO: Add loading manager to load assets before user enters art gallery
 // TODO: Add loading screen that shows progress of loading manager
 // TODO: Add second layer for canvases
+// TODO: Modularize the code
 
 function toggleNightMode() {
   if (isNightMode) {
