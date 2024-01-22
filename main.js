@@ -363,7 +363,6 @@ function onCanvasHover(event) {
 // TODO: Experiment with easing options for gsap
 // TODO: Add loading manager to load assets before user enters art gallery
 // TODO: Add loading screen that shows progress of loading manager
-// TODO: Add second layer for canvases
 
 function toggleNightMode() {
   if (isNightMode) {
