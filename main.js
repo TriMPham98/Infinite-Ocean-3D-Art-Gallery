@@ -35,6 +35,9 @@ progressRing.style.strokeDashoffset = circumference;
 backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
+// Ensure the start button is initially invisible
+startButton.style.opacity = "0";
+
 function setProgress(percent) {
   const offset = circumference - (percent / 100) * circumference;
   progressRing.style.strokeDashoffset = offset;
@@ -100,9 +103,27 @@ async function init() {
 
   manager.onLoad = function () {
     console.log("Loading complete!");
-    document.getElementById("loading-progress").style.display = "none";
-    startButton.style.display = "block";
-    assetsLoaded = true;
+
+    // Keep the progress circle visible for 2 more seconds
+    setTimeout(() => {
+      // Fade out the progress circle
+      const loadingProgress = document.getElementById("loading-progress");
+      loadingProgress.style.transition = "opacity 1s ease-out";
+      loadingProgress.style.opacity = "0";
+
+      // After the fade-out transition, hide the progress and show the button
+      setTimeout(() => {
+        loadingProgress.style.display = "none";
+        startButton.style.display = "block";
+
+        // Fade in the start button
+        startButton.style.transition = "opacity 1s ease-in";
+        startButton.style.opacity = "1";
+
+        assetsLoaded = true;
+        console.log("Enter Art Gallery button displayed");
+      }, 1500); // This 1000ms accounts for the fade-out transition of the progress circle
+    }, 2000);
   };
 
   manager.onError = function (url) {
@@ -376,6 +397,10 @@ function createPulseAnimation(light, minIntensity, maxIntensity, duration) {
     duration: duration,
     repeat: -1,
     yoyo: true,
+    intensity: maxIntensity,
+    duration: duration,
+    repeat: -1,
+    yoyo: true,
     ease: "power1.inOut",
   });
 }
@@ -447,8 +472,6 @@ function toggleNightMode() {
 init()
   .then(() => {
     console.log("Initialization complete");
-    document.getElementById("loading-progress").style.display = "none";
-    startButton.style.display = "block";
   })
   .catch((error) => {
     console.error("Initialization failed:", error);
