@@ -17,6 +17,7 @@ let skyUniforms;
 
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
+const sceneContainer = document.getElementById("scene-container");
 const progressRing = document.querySelector(".progress-ring__circle");
 const progressText = document.getElementById("progress-text");
 const backgroundMusic = document.getElementById("background-music");
@@ -41,10 +42,14 @@ function setProgress(percent) {
 
 startButton.addEventListener("click", function () {
   selectSound.play();
-  loadingScreen.classList.add("hidden");
-  renderer.domElement.style.opacity = 1;
+  loadingScreen.style.opacity = "0";
+  sceneContainer.style.opacity = "1";
+  setTimeout(() => {
+    loadingScreen.style.display = "none";
+  }, 2000);
   animate();
   backgroundMusic.play();
+  panToCenter();
 });
 
 function toggleMusic() {
@@ -120,17 +125,13 @@ async function init() {
     });
   }
 
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  document.body.appendChild(renderer.domElement);
+  sceneContainer.appendChild(renderer.domElement);
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
-
-  document
-    .getElementById("start-button")
-    .addEventListener("click", panToCenter);
 
   scene = new THREE.Scene();
 
@@ -140,7 +141,7 @@ async function init() {
     1,
     69000
   );
-  camera.position.set(0, 0, 0);
+  camera.position.set(300, 300, 690);
 
   sun = new THREE.Vector3();
 
@@ -292,9 +293,6 @@ async function init() {
 
   window.addEventListener("resize", onWindowResize);
 
-  renderer.domElement.style.opacity = 0;
-  renderer.domElement.style.transition = "opacity 2s ease";
-
   renderer.domElement.addEventListener("click", onCanvasClick);
   renderer.domElement.addEventListener("mousemove", onCanvasHover);
 }
@@ -318,9 +316,6 @@ function render() {
 }
 
 function panToCenter() {
-  const initialPosition = new THREE.Vector3(300, 300, 690);
-  camera.position.copy(initialPosition);
-  controls.update();
   const finalPosition = new THREE.Vector3(138.9, 27.5, 0.0);
   gsap.to(camera.position, {
     x: finalPosition.x,
@@ -431,4 +426,8 @@ function toggleNightMode() {
 }
 
 // Call init to start the application
-init();
+init().then(() => {
+  console.log("Initialization complete");
+  document.getElementById("loading-progress").style.display = "none";
+  startButton.style.display = "block";
+});

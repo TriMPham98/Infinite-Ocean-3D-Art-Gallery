@@ -12,6 +12,19 @@
         src: url("/Montserrat-Thin.ttf") format("truetype");
         font-weight: 100;
       }
+      #scene-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        opacity: 0;
+        transition: opacity 2s ease;
+      }
+      #loading-screen {
+        transition: opacity 2s ease;
+      }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Infinite Ocean 3D Art Gallery</title>
@@ -51,6 +64,7 @@
         </button>
       </div>
     </div>
+    <div id="scene-container"></div>
     <div id="app"></div>
     <button id="volume-toggle">Toggle Sound</button>
     <script type="module" src="/main.js"></script>
