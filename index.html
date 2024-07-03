@@ -31,18 +31,21 @@
   </head>
   <body>
     <div id="loading-screen">
-      <div id="loading-progress">
-        <svg class="progress-ring" width="120" height="120">
-          <circle
-            class="progress-ring__circle"
-            stroke="white"
-            stroke-width="4"
-            fill="transparent"
-            r="52"
-            cx="60"
-            cy="60" />
-        </svg>
-        <div id="progress-text">0%</div>
+      <div id="loading-container">
+        <div id="loading-progress">
+          <svg class="progress-ring" width="200" height="200">
+            <circle
+              class="progress-ring__circle"
+              stroke="white"
+              stroke-width="4"
+              fill="transparent"
+              r="90"
+              cx="100"
+              cy="100" />
+          </svg>
+          <div id="progress-text">0%</div>
+        </div>
+        <div id="loading-text">Loading...</div>
       </div>
       <button id="start-button" style="display: none">
         <span></span>

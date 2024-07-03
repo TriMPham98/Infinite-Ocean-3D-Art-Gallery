@@ -41,7 +41,9 @@ backgroundMusic.loop = true;
 function setProgress(percent) {
   const offset = circumference - (percent / 100) * circumference;
   progressRing.style.strokeDashoffset = offset;
-  progressText.textContent = `${Math.round(percent)}%`;
+  document.getElementById("progress-text").textContent = `${Math.round(
+    percent
+  )}%`;
 }
 
 startButton.addEventListener("click", function () {
@@ -109,23 +111,26 @@ async function init() {
 
     console.log("Loading complete!");
 
+    const loadingContainer = document.getElementById("loading-container");
+    const startButton = document.getElementById("start-button");
+
     setTimeout(() => {
-      const loadingProgress = document.getElementById("loading-progress");
-      loadingProgress.style.opacity = "0";
+      loadingContainer.style.opacity = "0";
 
       setTimeout(() => {
-        loadingProgress.style.display = "none";
-        startButton.style.display = "block";
+        loadingContainer.style.display = "none";
 
-        // Add a small delay before adding the 'visible' class
-        setTimeout(() => {
-          startButton.classList.add("visible");
-          assetsLoaded = true;
-          console.log("Enter Art Gallery button displayed");
-        }, 50);
-      }, 2000);
+        startButton.style.display = "block";
+        startButton.offsetHeight;
+        startButton.classList.add("visible");
+
+        assetsLoaded = true;
+        console.log("Enter Art Gallery button displayed");
+      }, 1000);
     }, 2000);
   };
+
+  // ... (rest of the code remains the same)
 
   manager.onError = function (url) {
     console.log("There was an error loading " + url);
