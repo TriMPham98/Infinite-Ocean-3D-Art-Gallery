@@ -158,3 +158,29 @@ body {
   right: 0;
   bottom: 0;
 }
+
+#loading-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progress-ring__circle {
+  transition: 0.35s stroke-dashoffset;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+#progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  color: white;
+  font-family: "Montserrat", sans-serif;
+}
+
+#start-button {
+  margin-top: 20px;
+}

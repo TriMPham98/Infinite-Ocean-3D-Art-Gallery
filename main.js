@@ -6,7 +6,7 @@ import { Sky } from "three/examples/jsm/objects/Sky.js";
 import { gsap } from "gsap";
 
 let camera, scene, renderer, sunMesh;
-let controls, water, sun; 
+let controls, water, sun;
 let canvasPositions = [];
 let raycaster, mouse;
 let canvases = [];
@@ -15,25 +15,34 @@ let currentCanvasIndex = 0;
 let isNightMode = false;
 let skyUniforms;
 
-init();
-
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
-const canvasElement = renderer.domElement;
+const progressRing = document.querySelector(".progress-ring__circle");
+const progressText = document.getElementById("progress-text");
 const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
 const selectSound = new Audio("/modernSelect.wav");
 selectSound.volume = 0.15;
 
-canvasElement.style.opacity = 0;
-canvasElement.style.transition = "opacity 2s ease";
+const radius = progressRing.r.baseVal.value;
+const circumference = radius * 2 * Math.PI;
+
+progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+progressRing.style.strokeDashoffset = circumference;
+
 backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
+
+function setProgress(percent) {
+  const offset = circumference - (percent / 100) * circumference;
+  progressRing.style.strokeDashoffset = offset;
+  progressText.textContent = `${Math.round(percent)}%`;
+}
 
 startButton.addEventListener("click", function () {
   selectSound.play();
   loadingScreen.classList.add("hidden");
-  canvasElement.style.opacity = 1;
+  renderer.domElement.style.opacity = 1;
   animate();
   backgroundMusic.play();
 });
@@ -67,6 +76,50 @@ window.addEventListener("keydown", function (event) {
 });
 
 async function init() {
+  const manager = new THREE.LoadingManager();
+  let imagesLoaded = 0;
+  const totalImages = numberOfCanvases + 2; // +2 for waternormals.jpg and whiteMarble.jpg
+
+  manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+    console.log(
+      `Loading file: ${url}.\nLoaded ${itemsLoaded} of ${itemsTotal} files.`
+    );
+    const progress = (itemsLoaded / itemsTotal) * 100;
+    setProgress(progress);
+  };
+
+  manager.onLoad = function () {
+    console.log("Loading complete!");
+    document.getElementById("loading-progress").style.display = "none";
+    startButton.style.display = "block";
+  };
+
+  manager.onError = function (url) {
+    console.log("There was an error loading " + url);
+  };
+
+  const loader = new THREE.TextureLoader(manager);
+
+  function loadTexture(url) {
+    return new Promise((resolve, reject) => {
+      loader.load(
+        url,
+        function (texture) {
+          imagesLoaded++;
+          console.log(
+            `Loaded ${url}. ${imagesLoaded}/${totalImages} images loaded.`
+          );
+          resolve(texture);
+        },
+        undefined,
+        function (err) {
+          console.error(`Error loading ${url}:`, err);
+          reject(err);
+        }
+      );
+    });
+  }
+
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -92,15 +145,13 @@ async function init() {
   sun = new THREE.Vector3();
 
   const waterGeometry = new THREE.PlaneGeometry(50000, 50000);
+  const waterNormals = await loadTexture("/waternormals.jpg");
+  waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+
   water = new Water(waterGeometry, {
     textureWidth: 512,
     textureHeight: 512,
-    waterNormals: new THREE.TextureLoader().load(
-      "/waternormals.jpg",
-      function (texture) {
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      }
-    ),
+    waterNormals: waterNormals,
     sunDirection: new THREE.Vector3(),
     sunColor: 0xffffff,
     waterColor: 0x001e0f,
@@ -113,8 +164,7 @@ async function init() {
 
   const circleRadius = 90;
   const canvasYPosition = 20;
-  const loader = new THREE.TextureLoader();
-  const marbleTexture = loader.load("/whiteMarble.jpg");
+  const marbleTexture = await loadTexture("/whiteMarble.jpg");
   const frameDepth = 1.0;
   const frameOffset = 1.5;
   const frameRadius = circleRadius - 0.51;
@@ -174,7 +224,7 @@ async function init() {
     createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
 
     // Canvas
-    const texture = loader.load("/image" + i + ".jpg");
+    const texture = await loadTexture("/image" + i + ".jpg");
     const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
@@ -241,6 +291,12 @@ async function init() {
   controls.update();
 
   window.addEventListener("resize", onWindowResize);
+
+  renderer.domElement.style.opacity = 0;
+  renderer.domElement.style.transition = "opacity 2s ease";
+
+  renderer.domElement.addEventListener("click", onCanvasClick);
+  renderer.domElement.addEventListener("mousemove", onCanvasHover);
 }
 
 function onWindowResize() {
@@ -270,7 +326,7 @@ function panToCenter() {
     x: finalPosition.x,
     y: finalPosition.y,
     z: finalPosition.z,
-    duration: 6.9, // TODO: Set duration to 6.9 for production
+    duration: 6.9,
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
@@ -311,9 +367,6 @@ function createPulseAnimation(light, minIntensity, maxIntensity, duration) {
   });
 }
 
-canvasElement.addEventListener("click", onCanvasClick);
-canvasElement.addEventListener("mousemove", onCanvasHover);
-
 function onCanvasClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -352,16 +405,11 @@ function onCanvasHover(event) {
     (canvases.includes(intersects[0].object) ||
       intersects[0].object === sunMesh)
   ) {
-    canvasElement.style.cursor = "pointer";
+    renderer.domElement.style.cursor = "pointer";
   } else {
-    canvasElement.style.cursor = "default";
+    renderer.domElement.style.cursor = "default";
   }
 }
-
-// TODO: Make canvas frame rectLight cooler when night mode is toggled
-// TODO: Add star particles when night mode is toggled
-// TODO: Add loading manager to load assets before user enters art gallery
-// TODO: Add loading screen that shows progress of loading manager
 
 function toggleNightMode() {
   if (isNightMode) {
@@ -381,3 +429,6 @@ function toggleNightMode() {
   console.log("(After click) Night mode: " + isNightMode);
   console.log("");
 }
+
+// Call init to start the application
+init();

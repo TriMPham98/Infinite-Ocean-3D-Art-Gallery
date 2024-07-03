@@ -18,14 +18,24 @@
   </head>
   <body>
     <div id="loading-screen">
-      <button id="start-button">
+      <div id="loading-progress">
+        <svg class="progress-ring" width="120" height="120">
+          <circle
+            class="progress-ring__circle"
+            stroke="white"
+            stroke-width="4"
+            fill="transparent"
+            r="52"
+            cx="60"
+            cy="60" />
+        </svg>
+        <div id="progress-text">0%</div>
+      </div>
+      <button id="start-button" style="display: none">
         <span></span>
         Enter Art Gallery
       </button>
-      <audio
-        id="background-music"
-        src="/zenPiano.mp3"
-        type="audio/mp3"></audio>
+      <audio id="background-music" src="/zenPiano.mp3" type="audio/mp3"></audio>
       <div id="control-panel">
         <button id="move-left" class="control-button">
           <span></span>
@@ -46,5 +56,3 @@
     <script type="module" src="/main.js"></script>
   </body>
 </html>
-
- <!--TODO: Add disappearing button in the style of start button on canvas click-->
