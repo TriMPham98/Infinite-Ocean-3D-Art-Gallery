@@ -34,7 +34,9 @@ body {
   cursor: pointer;
   border-radius: 5px;
   font-family: "Montserrat", sans-serif;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, opacity 1s ease-in; /* Added opacity transition */
+  opacity: 0; /* Set initial opacity to 0 */
+  margin-top: 20px; /* Moved from #start-button */
 }
 
 #loading-screen #start-button span {
@@ -98,6 +100,10 @@ body {
 #loading-screen #start-button:hover span::before,
 #loading-screen #start-button:hover span::after {
   transform: scaleY(1);
+}
+
+#loading-screen #start-button.visible {
+  opacity: 1;
 }
 
 .hidden {
@@ -179,8 +185,4 @@ body {
   font-size: 24px;
   color: white;
   font-family: "Montserrat", sans-serif;
-}
-
-#start-button {
-  margin-top: 20px;
 }
