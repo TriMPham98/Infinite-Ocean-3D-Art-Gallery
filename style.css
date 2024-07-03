@@ -169,6 +169,7 @@ body {
   position: relative;
   width: 120px;
   height: 120px;
+  transition: opacity 1s ease-out;
 }
 
 .progress-ring__circle {
@@ -185,4 +186,5 @@ body {
   font-size: 24px;
   color: white;
   font-family: "Montserrat", sans-serif;
+  transition: opacity 1s ease-out;
 }
