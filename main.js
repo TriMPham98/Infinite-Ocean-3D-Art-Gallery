@@ -14,6 +14,7 @@ const numberOfCanvases = 14;
 let currentCanvasIndex = 0;
 let isNightMode = false;
 let skyUniforms;
+let assetsLoaded = false;
 
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
@@ -41,6 +42,10 @@ function setProgress(percent) {
 }
 
 startButton.addEventListener("click", function () {
+  if (!assetsLoaded) {
+    console.log("Assets not fully loaded yet. Please wait.");
+    return;
+  }
   selectSound.play();
   loadingScreen.style.opacity = "0";
   sceneContainer.style.opacity = "1";
@@ -48,7 +53,7 @@ startButton.addEventListener("click", function () {
     loadingScreen.style.display = "none";
   }, 2000);
   animate();
-  backgroundMusic.play();
+  backgroundMusic.play().catch((e) => console.log("Audio play failed:", e));
   panToCenter();
 });
 
@@ -97,6 +102,7 @@ async function init() {
     console.log("Loading complete!");
     document.getElementById("loading-progress").style.display = "none";
     startButton.style.display = "block";
+    assetsLoaded = true;
   };
 
   manager.onError = function (url) {
@@ -295,6 +301,15 @@ async function init() {
 
   renderer.domElement.addEventListener("click", onCanvasClick);
   renderer.domElement.addEventListener("mousemove", onCanvasHover);
+
+  // Ensure audio is loaded
+  await new Promise((resolve) => {
+    backgroundMusic.addEventListener("canplaythrough", resolve, { once: true });
+    backgroundMusic.load();
+  });
+
+  // Ensure the scene is fully set up before allowing interaction
+  renderer.render(scene, camera);
 }
 
 function onWindowResize() {
@@ -325,6 +340,9 @@ function panToCenter() {
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
+    },
+    onComplete: function () {
+      console.log("Camera pan complete");
     },
   });
 }
@@ -426,8 +444,12 @@ function toggleNightMode() {
 }
 
 // Call init to start the application
-init().then(() => {
-  console.log("Initialization complete");
-  document.getElementById("loading-progress").style.display = "none";
-  startButton.style.display = "block";
-});
+init()
+  .then(() => {
+    console.log("Initialization complete");
+    document.getElementById("loading-progress").style.display = "none";
+    startButton.style.display = "block";
+  })
+  .catch((error) => {
+    console.error("Initialization failed:", error);
+  });
