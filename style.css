@@ -1,12 +1,7 @@
+/* Reset and Global Styles */
 * {
   margin: 0;
   padding: 0;
-}
-
-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
 }
 
 html,
@@ -16,6 +11,14 @@ body {
   overflow: hidden;
 }
 
+/* Canvas Styles */
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Loading Screen Styles */
 #loading-screen {
   position: absolute;
   width: 100%;
@@ -28,6 +31,44 @@ body {
   z-index: 1000;
 }
 
+#loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1s ease-out;
+}
+
+#loading-progress {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.progress-ring__circle {
+  transition: 0.35s stroke-dashoffset;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+#progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  color: white;
+  font-family: "Montserrat", sans-serif;
+}
+
+#loading-text {
+  margin-top: 20px;
+  font-size: 24px;
+  color: white;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Start Button Styles */
 #loading-screen #start-button {
   position: relative;
   overflow: hidden;
@@ -39,9 +80,9 @@ body {
   cursor: pointer;
   border-radius: 5px;
   font-family: "Montserrat", sans-serif;
-  transition: background-color 0.3s ease, opacity 1s ease-in; /* Added opacity transition */
-  opacity: 0; /* Set initial opacity to 0 */
-  margin-top: 20px; /* Moved from #start-button */
+  transition: background-color 0.3s ease, opacity 1s ease-in;
+  opacity: 0;
+  margin-top: 20px;
 }
 
 #loading-screen #start-button span {
@@ -111,29 +152,7 @@ body {
   opacity: 1;
 }
 
-.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-#volume-toggle {
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  padding: 5px 10px;
-  border: 1px solid #fff;
-  border-radius: 5px;
-  background-color: rgba(255, 255, 255, 0);
-  color: #fff;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  font-family: "Montserrat", sans-serif;
-}
-
-#volume-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
+/* Control Panel Styles */
 #control-panel {
   position: absolute;
   bottom: 15px;
@@ -144,8 +163,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  opacity: 0; /* Start with opacity 0 */
-  transition: opacity 1s ease-in; /* Add transition for opacity */
+  opacity: 0;
+  transition: opacity 1s ease-in;
 }
 
 #controls-container {
@@ -168,11 +187,6 @@ body {
   transition: background-color 0.3s ease, opacity 1s ease-in;
 }
 
-#control-panel {
-  display: flex;
-  gap: 10px;
-}
-
 .control-button {
   position: relative;
   overflow: hidden;
@@ -184,10 +198,10 @@ body {
   cursor: pointer;
   border-radius: 5px;
   font-family: "Montserrat", sans-serif;
-  transition: background-color 0.3s ease, opacity 1s ease-in; /* Add opacity transition */
+  transition: background-color 0.3s ease, opacity 1s ease-in;
   margin: 5px;
   cursor: default;
-  opacity: 0; /* Start with opacity 0 */
+  opacity: 0;
 }
 
 .control-button span {
@@ -198,44 +212,32 @@ body {
   bottom: 0;
 }
 
-#loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 1s ease-out;
-}
-
-#loading-progress {
-  position: relative;
-  width: 200px;
-  height: 200px;
-}
-
-.progress-ring__circle {
-  transition: 0.35s stroke-dashoffset;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-}
-
-#progress-text {
+/* Volume Toggle Styles */
+#volume-toggle {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 36px;
-  color: white;
+  bottom: 15px;
+  right: 15px;
+  padding: 5px 10px;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
   font-family: "Montserrat", sans-serif;
 }
 
-#loading-text {
-  margin-top: 20px;
-  font-size: 24px;
-  color: white;
-  font-family: "Montserrat", sans-serif;
+#volume-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Ensure these elements fade out */
+/* Utility Classes */
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Transition Styles */
 #loading-progress,
 #progress-text,
 #loading-text {
