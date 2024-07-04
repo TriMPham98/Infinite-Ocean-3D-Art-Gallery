@@ -94,9 +94,6 @@ async function init() {
   const totalImages = numberOfCanvases + 2; // +2 for waternormals.jpg and whiteMarble.jpg
 
   manager.onProgress = function (url, itemsLoaded, itemsTotal) {
-    console.log(
-      `Loading file: ${url}.\nLoaded ${itemsLoaded} of ${itemsTotal} files.`
-    );
     const progress = (itemsLoaded / itemsTotal) * 100;
     setProgress(progress);
   };
@@ -107,7 +104,7 @@ async function init() {
     if (onLoadExecuted) return;
     onLoadExecuted = true;
 
-    console.log("Loading complete!");
+    console.log("Loading complete");
 
     const loadingContainer = document.getElementById("loading-container");
     const startButton = document.getElementById("start-button");
@@ -140,9 +137,6 @@ async function init() {
           });
 
           assetsLoaded = true;
-          console.log(
-            "Enter Art Gallery button, keyboard controls header, and control panel displayed"
-          );
         }, 100); // Adjust this delay as needed to match your desired timing
       }, 690);
     }, 1500);
@@ -160,9 +154,6 @@ async function init() {
         url,
         function (texture) {
           imagesLoaded++;
-          console.log(
-            `Loaded ${url}. ${imagesLoaded}/${totalImages} images loaded.`
-          );
           resolve(texture);
         },
         undefined,
@@ -386,9 +377,6 @@ function panToCenter() {
     onUpdate: function () {
       controls.update();
     },
-    onComplete: function () {
-      console.log("Camera pan complete");
-    },
   });
 }
 
@@ -442,7 +430,6 @@ function onCanvasClick(event) {
     const closestCanvas = intersects[0].object;
     const canvasIndex = canvases.indexOf(closestCanvas);
     selectSound.play();
-    console.log("Canvas index clicked:", canvasIndex);
     moveToCanvas(canvasIndex);
   }
 
