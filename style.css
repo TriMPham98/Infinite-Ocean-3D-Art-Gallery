@@ -148,6 +148,31 @@ body {
   transition: opacity 1s ease-in; /* Add transition for opacity */
 }
 
+#controls-container {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#keyboard-controls-header {
+  color: white;
+  font-family: "Montserrat", sans-serif;
+  font-size: 28px;
+  margin-bottom: 100px;
+  text-align: center;
+  opacity: 0;
+  transition: background-color 0.3s ease, opacity 1s ease-in;
+}
+
+#control-panel {
+  display: flex;
+  gap: 10px;
+}
+
 .control-button {
   position: relative;
   overflow: hidden;

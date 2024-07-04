@@ -115,6 +115,9 @@ async function init() {
     const startButton = document.getElementById("start-button");
     const controlPanel = document.getElementById("control-panel");
     const controlButtons = document.querySelectorAll(".control-button");
+    const keyboardControlsHeader = document.getElementById(
+      "keyboard-controls-header"
+    );
 
     setTimeout(() => {
       loadingContainer.style.opacity = "0";
@@ -126,15 +129,21 @@ async function init() {
         startButton.offsetHeight; // Trigger reflow
         startButton.classList.add("visible");
 
-        // Fade in control panel and buttons
-        controlPanel.style.opacity = "1";
-        controlButtons.forEach((button) => {
-          button.style.opacity = "1";
-        });
+        // Wait for the start button to become visible before showing controls
+        setTimeout(() => {
+          // Fade in control panel, buttons, and keyboard controls header together
+          controlPanel.style.opacity = "1";
+          keyboardControlsHeader.style.opacity = "1";
+          controlButtons.forEach((button) => {
+            button.style.opacity = "1";
+          });
 
-        assetsLoaded = true;
-        console.log("Enter Art Gallery button and control panel displayed");
-      }, 1000);
+          assetsLoaded = true;
+          console.log(
+            "Enter Art Gallery button, keyboard controls header, and control panel displayed"
+          );
+        }, 1500); // Adjust this delay as needed to match your desired timing
+      }, 1500);
     }, 1500);
   };
 
