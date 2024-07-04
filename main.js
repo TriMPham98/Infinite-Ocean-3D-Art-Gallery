@@ -5,6 +5,7 @@ import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 import { gsap } from "gsap";
 
+// Global Variables
 let camera, scene, renderer, sunMesh;
 let controls, water, sun;
 let canvasPositions = [];
@@ -16,6 +17,7 @@ let isNightMode = false;
 let skyUniforms;
 let assetsLoaded = false;
 
+// DOM Elements
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
 const sceneContainer = document.getElementById("scene-container");
@@ -24,74 +26,30 @@ const progressText = document.getElementById("progress-text");
 const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
 const selectSound = new Audio("/modernSelect.wav");
-selectSound.volume = 0.15;
 
+// Constants
 const radius = progressRing.r.baseVal.value;
 const circumference = radius * 2 * Math.PI;
 
-progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
-progressRing.style.strokeDashoffset = circumference;
-
+// Audio Setup
+selectSound.volume = 0.15;
 backgroundMusic.volume = 0.69;
 backgroundMusic.loop = true;
 
-// Ensure the start button is initially invisible
-// startButton.style.opacity = "0";
+// Progress Ring Setup
+progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+progressRing.style.strokeDashoffset = circumference;
 
-function setProgress(percent) {
-  const offset = circumference - (percent / 100) * circumference;
-  progressRing.style.strokeDashoffset = offset;
-  progressText.textContent = `${Math.round(percent)}%`;
-}
-
-startButton.addEventListener("click", function () {
-  if (!assetsLoaded) {
-    console.log("Assets not fully loaded yet. Please wait.");
-    return;
-  }
-  selectSound.play();
-  loadingScreen.style.opacity = "0";
-  sceneContainer.style.opacity = "1";
-  setTimeout(() => {
-    loadingScreen.style.display = "none";
-  }, 2000);
-  animate();
-  backgroundMusic.play().catch((e) => console.log("Audio play failed:", e));
-  panToCenter();
-});
-
-function toggleMusic() {
-  if (backgroundMusic.volume > 0) {
-    backgroundMusic.volume = 0;
-    selectSound.volume = 0;
-    volumeToggleBtn.textContent = "Unmute Sound";
-  } else {
-    selectSound.volume = 0.15;
-    backgroundMusic.volume = 0.69;
-    volumeToggleBtn.textContent = "Mute Sound";
-  }
-}
-
+// Event Listeners
+startButton.addEventListener("click", onStartButtonClick);
 volumeToggleBtn.addEventListener("click", toggleMusic);
+window.addEventListener("keydown", handleKeyPress);
+window.addEventListener("resize", onWindowResize, false);
 
-window.addEventListener("keydown", function (event) {
-  if (event.key === "Enter") {
-    document.getElementById("start-button").click();
-  } else if (event.key === "m" || event.key === "M") {
-    toggleMusic();
-  } else if (event.key === "ArrowRight") {
-    selectSound.play();
-    moveToCanvas(currentCanvasIndex - 1);
-  } else if (event.key === "ArrowLeft") {
-    selectSound.play();
-    moveToCanvas(currentCanvasIndex + 1);
-  }
-});
-
+// Main Functions
 async function init() {
   const manager = new THREE.LoadingManager();
   let imagesLoaded = 0;
-  const totalImages = numberOfCanvases + 2; // +2 for waternormals.jpg and whiteMarble.jpg
 
   manager.onProgress = function (url, itemsLoaded, itemsTotal) {
     const progress = (itemsLoaded / itemsTotal) * 100;
@@ -122,14 +80,11 @@ async function init() {
 
       setTimeout(() => {
         loadingContainer.style.display = "none";
-
         startButton.style.display = "block";
-        startButton.offsetHeight; // Trigger reflow
+        startButton.offsetHeight;
         startButton.classList.add("visible");
 
-        // Wait for the start button to become visible before showing controls
         setTimeout(() => {
-          // Fade in control panel, buttons, and keyboard controls header together
           controlPanel.style.opacity = "1";
           keyboardControlsHeader.style.opacity = "1";
           controlButtons.forEach((button) => {
@@ -137,7 +92,7 @@ async function init() {
           });
 
           assetsLoaded = true;
-        }, 100); // Adjust this delay as needed to match your desired timing
+        }, 100);
       }, 690);
     }, 1500);
   };
@@ -228,7 +183,6 @@ async function init() {
     const canvasWidth = isEven ? 20 : 30;
     const canvasHeight = isEven ? 30 : 20;
 
-    // Frame
     const frameGeometry = new THREE.BoxGeometry(
       frameWidth,
       frameDepth,
@@ -247,7 +201,6 @@ async function init() {
     );
     scene.add(frame);
 
-    // Light
     const rectLight = new THREE.RectAreaLight(
       lightColor,
       lightIntensity,
@@ -264,7 +217,6 @@ async function init() {
 
     createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
 
-    // Canvas
     const texture = await loadTexture("/image" + i + ".jpg");
     const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
     const canvasMaterial = new THREE.MeshStandardMaterial({
@@ -331,19 +283,81 @@ async function init() {
   controls.dampingFactor = 0.05;
   controls.update();
 
-  window.addEventListener("resize", onWindowResize, false);
-
   renderer.domElement.addEventListener("click", onCanvasClick);
   renderer.domElement.addEventListener("mousemove", onCanvasHover);
 
-  // Ensure audio is loaded
   await new Promise((resolve) => {
     backgroundMusic.addEventListener("canplaythrough", resolve, { once: true });
     backgroundMusic.load();
   });
 
-  // Ensure the scene is fully set up before allowing interaction
   renderer.render(scene, camera);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  render();
+}
+
+function render() {
+  water.material.uniforms["time"].value += 0.69 / 60.0;
+  renderer.render(scene, camera);
+}
+
+// Helper Functions
+function setProgress(percent) {
+  const offset = circumference - (percent / 100) * circumference;
+  progressRing.style.strokeDashoffset = offset;
+  progressText.textContent = `${Math.round(percent)}%`;
+}
+
+function toggleMusic() {
+  if (backgroundMusic.volume > 0) {
+    backgroundMusic.volume = 0;
+    selectSound.volume = 0;
+    volumeToggleBtn.textContent = "Unmute Sound";
+  } else {
+    selectSound.volume = 0.15;
+    backgroundMusic.volume = 0.69;
+    volumeToggleBtn.textContent = "Mute Sound";
+  }
+}
+
+function onStartButtonClick() {
+  if (!assetsLoaded) {
+    console.log("Assets not fully loaded yet. Please wait.");
+    return;
+  }
+  selectSound.play();
+  loadingScreen.style.opacity = "0";
+  sceneContainer.style.opacity = "1";
+  setTimeout(() => {
+    loadingScreen.style.display = "none";
+  }, 2000);
+  animate();
+  backgroundMusic.play().catch((e) => console.log("Audio play failed:", e));
+  panToCenter();
+}
+
+function handleKeyPress(event) {
+  switch (event.key) {
+    case "Enter":
+      document.getElementById("start-button").click();
+      break;
+    case "m":
+    case "M":
+      toggleMusic();
+      break;
+    case "ArrowRight":
+      selectSound.play();
+      moveToCanvas(currentCanvasIndex - 1);
+      break;
+    case "ArrowLeft":
+      selectSound.play();
+      moveToCanvas(currentCanvasIndex + 1);
+      break;
+  }
 }
 
 function onWindowResize() {
@@ -352,18 +366,6 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   controls.update();
   render();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  render();
-  // logCameraPosition();
-}
-
-function render() {
-  water.material.uniforms["time"].value += 0.69 / 60.0;
-  renderer.render(scene, camera);
 }
 
 function panToCenter() {
@@ -378,14 +380,6 @@ function panToCenter() {
       controls.update();
     },
   });
-}
-
-function logCameraPosition() {
-  console.log(
-    `Camera Position - x: ${camera.position.x.toFixed(
-      1
-    )}, y: ${camera.position.y.toFixed(1)}, z: ${camera.position.z.toFixed(1)}`
-  );
 }
 
 function moveToCanvas(index) {
@@ -405,10 +399,6 @@ function moveToCanvas(index) {
 function createPulseAnimation(light, minIntensity, maxIntensity, duration) {
   light.intensity = minIntensity;
   gsap.to(light, {
-    intensity: maxIntensity,
-    duration: duration,
-    repeat: -1,
-    yoyo: true,
     intensity: maxIntensity,
     duration: duration,
     repeat: -1,
@@ -479,7 +469,7 @@ function toggleNightMode() {
   console.log("");
 }
 
-// Call init to start the application
+// Initialize the application
 init()
   .then(() => {
     console.log("Initialization complete");
