@@ -144,7 +144,7 @@ async function init() {
             "Enter Art Gallery button, keyboard controls header, and control panel displayed"
           );
         }, 100); // Adjust this delay as needed to match your desired timing
-      }, 100);
+      }, 690);
     }, 1500);
   };
 
