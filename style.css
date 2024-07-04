@@ -144,6 +144,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  opacity: 0; /* Start with opacity 0 */
+  transition: opacity 1s ease-in; /* Add transition for opacity */
 }
 
 .control-button {
@@ -157,9 +159,10 @@ body {
   cursor: pointer;
   border-radius: 5px;
   font-family: "Montserrat", sans-serif;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, opacity 1s ease-in; /* Add opacity transition */
   margin: 5px;
   cursor: default;
+  opacity: 0; /* Start with opacity 0 */
 }
 
 .control-button span {

@@ -113,6 +113,8 @@ async function init() {
 
     const loadingContainer = document.getElementById("loading-container");
     const startButton = document.getElementById("start-button");
+    const controlPanel = document.getElementById("control-panel");
+    const controlButtons = document.querySelectorAll(".control-button");
 
     setTimeout(() => {
       loadingContainer.style.opacity = "0";
@@ -121,11 +123,17 @@ async function init() {
         loadingContainer.style.display = "none";
 
         startButton.style.display = "block";
-        startButton.offsetHeight;
+        startButton.offsetHeight; // Trigger reflow
         startButton.classList.add("visible");
 
+        // Fade in control panel and buttons
+        controlPanel.style.opacity = "1";
+        controlButtons.forEach((button) => {
+          button.style.opacity = "1";
+        });
+
         assetsLoaded = true;
-        console.log("Enter Art Gallery button displayed");
+        console.log("Enter Art Gallery button and control panel displayed");
       }, 1000);
     }, 1500);
   };
