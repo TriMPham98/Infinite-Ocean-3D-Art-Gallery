@@ -41,9 +41,7 @@ backgroundMusic.loop = true;
 function setProgress(percent) {
   const offset = circumference - (percent / 100) * circumference;
   progressRing.style.strokeDashoffset = offset;
-  document.getElementById("progress-text").textContent = `${Math.round(
-    percent
-  )}%`;
+  progressText.textContent = `${Math.round(percent)}%`;
 }
 
 startButton.addEventListener("click", function () {
