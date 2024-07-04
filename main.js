@@ -465,8 +465,6 @@ function toggleNightMode() {
     gsap.to(skyUniforms["mieDirectionalG"], { value: -1.01, duration: 3.69 });
   }
   isNightMode = !isNightMode;
-  console.log("(After click) Night mode: " + isNightMode);
-  console.log("");
 }
 
 // Initialize the application
