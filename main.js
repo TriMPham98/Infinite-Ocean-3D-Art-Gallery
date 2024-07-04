@@ -112,7 +112,7 @@ async function init() {
     console.log("Loading complete!");
 
     const loadingContainer = document.getElementById("loading-container");
-    const galleryEntrance = document.getElementById("gallery-entrance");
+    const startButton = document.getElementById("start-button");
 
     setTimeout(() => {
       loadingContainer.style.opacity = "0";
@@ -120,13 +120,12 @@ async function init() {
       setTimeout(() => {
         loadingContainer.style.display = "none";
 
-        galleryEntrance.style.display = "flex";
-        // Trigger reflow
-        galleryEntrance.offsetHeight;
-        galleryEntrance.classList.add("visible");
+        startButton.style.display = "block";
+        startButton.offsetHeight;
+        startButton.classList.add("visible");
 
         assetsLoaded = true;
-        console.log("Gallery entrance elements displayed");
+        console.log("Enter Art Gallery button displayed");
       }, 1000);
     }, 1500);
   };
