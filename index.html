@@ -47,25 +47,28 @@
         </div>
         <div id="loading-text">Loading...</div>
       </div>
-      <button id="start-button" style="display: none">
-        <span></span>
-        Enter Art Gallery
-      </button>
-      <audio id="background-music" src="/zenPiano.mp3" type="audio/mp3"></audio>
-      <div id="control-panel">
-        <button id="move-left" class="control-button">
+      <div id="gallery-entrance" style="display: none">
+        <button id="start-button">
           <span></span>
-          &#8592; = Move Left
+          Enter Art Gallery
         </button>
-        <button id="toggle-sound" class="control-button">
-          <span></span>
-          m = Toggle Sound
-        </button>
-        <button id="move-right" class="control-button">
-          <span></span>
-          &#8594; = Move Right
-        </button>
+        <h3 id="controls-subheader">Keyboard Controls</h3>
+        <div id="control-panel">
+          <button id="move-left" class="control-button">
+            <span></span>
+            &#8592; = Move Left
+          </button>
+          <button id="toggle-sound" class="control-button">
+            <span></span>
+            m = Toggle Sound
+          </button>
+          <button id="move-right" class="control-button">
+            <span></span>
+            &#8594; = Move Right
+          </button>
+        </div>
       </div>
+      <audio id="background-music" src="/zenPiano.mp3" type="audio/mp3"></audio>
     </div>
     <div id="scene-container"></div>
     <div id="app"></div>
