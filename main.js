@@ -116,6 +116,9 @@ async function init() {
     const keyboardControlsHeader = document.getElementById(
       "keyboard-controls-header"
     );
+    const loadingText = document.getElementById("loading-text");
+
+    loadingText.textContent = "Loading Complete";
 
     setTimeout(() => {
       loadingContainer.style.opacity = "0";
@@ -140,8 +143,8 @@ async function init() {
           console.log(
             "Enter Art Gallery button, keyboard controls header, and control panel displayed"
           );
-        }, 1500); // Adjust this delay as needed to match your desired timing
-      }, 1500);
+        }, 100); // Adjust this delay as needed to match your desired timing
+      }, 100);
     }, 1500);
   };
 
