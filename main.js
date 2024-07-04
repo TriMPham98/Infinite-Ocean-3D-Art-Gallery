@@ -324,7 +324,7 @@ async function init() {
   controls.dampingFactor = 0.05;
   controls.update();
 
-  window.addEventListener("resize", onWindowResize);
+  window.addEventListener("resize", onWindowResize, false);
 
   renderer.domElement.addEventListener("click", onCanvasClick);
   renderer.domElement.addEventListener("mousemove", onCanvasHover);
@@ -343,6 +343,8 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  controls.update();
+  render();
 }
 
 function animate() {
