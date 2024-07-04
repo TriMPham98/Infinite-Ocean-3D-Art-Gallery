@@ -11,11 +11,30 @@ body {
   overflow: hidden;
 }
 
+/* Font Face */
+@font-face {
+  font-family: "Montserrat";
+  src: url("/Montserrat-Thin.ttf") format("truetype");
+  font-weight: 100;
+}
+
 /* Canvas Styles */
 canvas {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Scene Container Styles */
+#scene-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 2s ease;
 }
 
 /* Loading Screen Styles */
@@ -83,6 +102,7 @@ canvas {
   transition: background-color 0.3s ease, opacity 1s ease-in;
   opacity: 0;
   margin-top: 20px;
+  display: none;
 }
 
 #loading-screen #start-button span {

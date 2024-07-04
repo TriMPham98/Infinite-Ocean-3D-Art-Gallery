@@ -6,26 +6,6 @@
     <link rel="stylesheet" href="/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <style>
-      @font-face {
-        font-family: "Montserrat";
-        src: url("/Montserrat-Thin.ttf") format("truetype");
-        font-weight: 100;
-      }
-      #scene-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 0;
-        opacity: 0;
-        transition: opacity 2s ease;
-      }
-      #loading-screen {
-        transition: opacity 2s ease;
-      }
-    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Infinite Ocean 3D Art Gallery</title>
   </head>
@@ -47,7 +27,7 @@
         </div>
         <div id="loading-text">Loading...</div>
       </div>
-      <button id="start-button" style="display: none">
+      <button id="start-button">
         <span></span>
         Enter Art Gallery
       </button>
