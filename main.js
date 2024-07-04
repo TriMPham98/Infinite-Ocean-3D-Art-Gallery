@@ -127,10 +127,8 @@ async function init() {
         assetsLoaded = true;
         console.log("Enter Art Gallery button displayed");
       }, 1000);
-    }, 2000);
+    }, 1500);
   };
-
-  // ... (rest of the code remains the same)
 
   manager.onError = function (url) {
     console.log("There was an error loading " + url);
