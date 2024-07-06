@@ -533,25 +533,27 @@ function createArtworkText() {
           bevelEnabled: false,
         }
       );
-      textGeometry.center(); // Center the text geometry
-      const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      textGeometry.center();
+
+      const textMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0 });
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
-      // Position the text below the canvas
       textMesh.position.set(
         artwork.position.x,
-        canvasYPosition - 20, // Adjust this value as needed
+        canvasYPosition - 20,
         artwork.position.z
       );
 
-      // Rotate the text to face outward from the center
       textMesh.lookAt(new THREE.Vector3(0, textMesh.position.y, 0));
-      textMesh.rotateY(Math.PI); // Rotate 180 degrees to face the correct direction
+      textMesh.rotateY(Math.PI);
 
-      // Add the text to the scene
       scene.add(textMesh);
     });
   });
+
+  // Ensure there's enough light in the scene
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
 }
 
 function onCanvasHover(event) {
