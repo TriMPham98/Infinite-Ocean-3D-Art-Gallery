@@ -473,7 +473,7 @@ function moveToCanvas(index) {
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
   gsap.to(camera.position, {
     x: canvasPositions[currentCanvasIndex].x,
-    y: canvasPositions[currentCanvasIndex].y - 1.3,
+    y: canvasPositions[currentCanvasIndex].y - 2.3,
     z: canvasPositions[currentCanvasIndex].z,
     duration: 1.69,
     ease: "power2.inOut",
