@@ -32,77 +32,77 @@ const selectSound = new Audio("/modernSelect.wav");
 // Constants
 const radius = progressRing.r.baseVal.value;
 const circumference = radius * 2 * Math.PI;
-const canvasYPosition = 20;
+const canvasYPosition = 25;
 const circleRadius = 90;
 
 const artworkInfo = [
   {
-    title: "Peacock",
-    artist: "Artist Name",
+    title: "Peacock's Pride", // image0
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "At the Gate",
+    title: "At the Gate", // image1
     artist: "Liz Burkhart",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Sun Star",
-    artist: "Artist Name",
+    title: "Sun Star", // image2
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Bride",
+    title: "Bride", // image3
     artist: "Ebba Wagner",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Polyfall",
+    title: "Polyfall", // image4
     artist: "Valentina Piraneque Ortiz",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Serene",
+    title: "Serene", // image5
     artist: "Mykal Coleman",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Cat",
-    artist: "Artist Name",
+    title: "Curious Cat", // image6
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Arrival",
+    title: "Arrival", // image7
     artist: "Liz Burkhart",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Seal",
-    artist: "Artist Name",
+    title: "Sleepin' Seal", // image8
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Lunar Eclipse",
+    title: "Lunar Eclipse", // image9
     artist: "Valentina Piraneque Ortiz",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "San Francisco",
-    artist: "Artist Name",
+    title: "The City", // image10
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "USA",
-    artist: "Artist Name",
+    title: "Star-Spangled Descent", // image11
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Loop",
-    artist: "Artist Name",
+    title: "Daredevil Loop", // image12
+    artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Waterfall",
+    title: "Waterfall", // image13
     artist: "Ebba Wagner",
     position: new THREE.Vector3(0, 0, 0),
   },
@@ -473,7 +473,7 @@ function moveToCanvas(index) {
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
   gsap.to(camera.position, {
     x: canvasPositions[currentCanvasIndex].x,
-    y: canvasPositions[currentCanvasIndex].y + 1.3,
+    y: canvasPositions[currentCanvasIndex].y - 1.3,
     z: canvasPositions[currentCanvasIndex].z,
     duration: 1.69,
     ease: "power2.inOut",
@@ -524,7 +524,7 @@ function createArtworkText() {
   loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
     artworkInfo.forEach((artwork, index) => {
       const textGeometry = new TextGeometry(
-        `${artwork.title}\nby ${artwork.artist}`,
+        `${artwork.title}\n${artwork.artist}`,
         {
           font: font,
           size: 2,
@@ -538,13 +538,19 @@ function createArtworkText() {
       const textMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0 });
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
+      // Calculate the position to center the text below the artwork
+      const angle = (index / numberOfCanvases) * Math.PI * 2;
+      const textRadius = circleRadius + 3; // Adjust this value to move text closer to or further from the center
+      const textHeight = canvasYPosition - 20; // Adjust this value to move text up or down
+
       textMesh.position.set(
-        artwork.position.x,
-        canvasYPosition - 20,
-        artwork.position.z
+        textRadius * Math.cos(angle),
+        textHeight,
+        textRadius * Math.sin(angle)
       );
 
-      textMesh.lookAt(new THREE.Vector3(0, textMesh.position.y, 0));
+      // Make the text face the center of the circle
+      textMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
       textMesh.rotateY(Math.PI);
 
       scene.add(textMesh);
