@@ -3,6 +3,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { gsap } from "gsap";
 
 // Global Variables
@@ -30,6 +32,91 @@ const selectSound = new Audio("/modernSelect.wav");
 // Constants
 const radius = progressRing.r.baseVal.value;
 const circumference = radius * 2 * Math.PI;
+const canvasYPosition = 20;
+const circleRadius = 90;
+
+const artworkInfo = [
+  {
+    title: "Bride",
+    artist: "Ebba Wagner",
+    position: new THREE.Vector3(0, 0, 0), // Will be set in the loop
+  },
+  {
+    title: "Waterfall",
+    artist: "Ebba Wagner",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Polyfall",
+    artist: "Valentina Piraneque Ortiz",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Lunar Eclipse",
+    artist: "Valentina Piraneque Ortiz",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "At the Gate",
+    artist: "Liz Burkhart",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Arrival",
+    artist: "Liz Burkhart",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Serene",
+    artist: "Mykal Coleman",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Peacock",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Loop",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "USA",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "San Francisco",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Seal",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Cat",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Sun Star",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+];
+
+// Set the correct positions for each artwork
+for (let i = 0; i < numberOfCanvases; i++) {
+  const angle = (i / numberOfCanvases) * Math.PI * 2;
+  artworkInfo[i].position.set(
+    circleRadius * Math.cos(angle),
+    canvasYPosition,
+    circleRadius * Math.sin(angle)
+  );
+}
 
 // Audio Setup
 selectSound.volume = 0.15;
@@ -159,7 +246,6 @@ async function init() {
   scene.add(water);
 
   const circleRadius = 90;
-  const canvasYPosition = 20;
   const marbleTexture = await loadTexture("/whiteMarble.jpg");
   const frameDepth = 1.0;
   const frameOffset = 1.5;
@@ -292,6 +378,7 @@ async function init() {
   });
 
   renderer.render(scene, camera);
+  createArtworkText();
 }
 
 function animate() {
@@ -430,6 +517,37 @@ function onCanvasClick(event) {
     console.log("Sun is clicked");
     toggleNightMode();
   }
+}
+
+function createArtworkText() {
+  const loader = new FontLoader();
+  loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
+    artworkInfo.forEach((artwork, index) => {
+      const textGeometry = new TextGeometry(
+        `${artwork.title}\nby ${artwork.artist}`,
+        {
+          font: font,
+          size: 2,
+          height: 0.1,
+        }
+      );
+      const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+      // Position the text below the canvas
+      textMesh.position.set(
+        artwork.position.x,
+        canvasYPosition - 20, // Adjust this value to position the text appropriately
+        artwork.position.z
+      );
+
+      // Rotate the text to face the center
+      textMesh.lookAt(new THREE.Vector3(0, canvasYPosition - 20, 0));
+
+      // Add the text to the scene
+      scene.add(textMesh);
+    });
+  });
 }
 
 function onCanvasHover(event) {
