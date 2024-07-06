@@ -92,12 +92,12 @@ const artworkInfo = [
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Star-Spangled Descent", // image11
+    title: "Patriot's Parachute", // image11
     artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Daredevil Loop", // image12
+    title: "Aerial Acrobat", // image12
     artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
