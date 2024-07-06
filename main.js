@@ -521,7 +521,7 @@ function onCanvasClick(event) {
 
 function createArtworkText() {
   const loader = new FontLoader();
-  loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
+  loader.load("/public/helvetiker_regular.typeface.json", function (font) {
     artworkInfo.forEach((artwork, index) => {
       // Create separate geometries for title and artist
       const titleGeometry = new TextGeometry(artwork.title, {
