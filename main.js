@@ -37,6 +37,11 @@ const circleRadius = 90;
 
 const artworkInfo = [
   {
+    title: "Peacock",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
     title: "Bride",
     artist: "Ebba Wagner",
     position: new THREE.Vector3(0, 0, 0), // Will be set in the loop
@@ -69,11 +74,6 @@ const artworkInfo = [
   {
     title: "Serene",
     artist: "Mykal Coleman",
-    position: new THREE.Vector3(0, 0, 0),
-  },
-  {
-    title: "Peacock",
-    artist: "Artist Name",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -529,20 +529,24 @@ function createArtworkText() {
           font: font,
           size: 2,
           height: 0.1,
+          curveSegments: 12,
+          bevelEnabled: false,
         }
       );
+      textGeometry.center(); // Center the text geometry
       const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
       // Position the text below the canvas
       textMesh.position.set(
         artwork.position.x,
-        canvasYPosition - 20, // Adjust this value to position the text appropriately
+        canvasYPosition - 20, // Adjust this value as needed
         artwork.position.z
       );
 
-      // Rotate the text to face the center
-      textMesh.lookAt(new THREE.Vector3(0, canvasYPosition - 20, 0));
+      // Rotate the text to face outward from the center
+      textMesh.lookAt(new THREE.Vector3(0, textMesh.position.y, 0));
+      textMesh.rotateY(Math.PI); // Rotate 180 degrees to face the correct direction
 
       // Add the text to the scene
       scene.add(textMesh);
