@@ -42,12 +42,17 @@ const artworkInfo = [
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Bride",
-    artist: "Ebba Wagner",
-    position: new THREE.Vector3(0, 0, 0), // Will be set in the loop
+    title: "At the Gate",
+    artist: "Liz Burkhart",
+    position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Waterfall",
+    title: "Sun Star",
+    artist: "Artist Name",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "Bride",
     artist: "Ebba Wagner",
     position: new THREE.Vector3(0, 0, 0),
   },
@@ -57,13 +62,13 @@ const artworkInfo = [
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Lunar Eclipse",
-    artist: "Valentina Piraneque Ortiz",
+    title: "Serene",
+    artist: "Mykal Coleman",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "At the Gate",
-    artist: "Liz Burkhart",
+    title: "Cat",
+    artist: "Artist Name",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -72,12 +77,17 @@ const artworkInfo = [
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Serene",
-    artist: "Mykal Coleman",
+    title: "Seal",
+    artist: "Artist Name",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Loop",
+    title: "Lunar Eclipse",
+    artist: "Valentina Piraneque Ortiz",
+    position: new THREE.Vector3(0, 0, 0),
+  },
+  {
+    title: "San Francisco",
     artist: "Artist Name",
     position: new THREE.Vector3(0, 0, 0),
   },
@@ -87,23 +97,13 @@ const artworkInfo = [
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "San Francisco",
+    title: "Loop",
     artist: "Artist Name",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Seal",
-    artist: "Artist Name",
-    position: new THREE.Vector3(0, 0, 0),
-  },
-  {
-    title: "Cat",
-    artist: "Artist Name",
-    position: new THREE.Vector3(0, 0, 0),
-  },
-  {
-    title: "Sun Star",
-    artist: "Artist Name",
+    title: "Waterfall",
+    artist: "Ebba Wagner",
     position: new THREE.Vector3(0, 0, 0),
   },
 ];
