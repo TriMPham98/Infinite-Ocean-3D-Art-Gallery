@@ -532,7 +532,7 @@ function createArtworkText() {
           // Create separate geometries for title and artist
           const titleGeometry = new TextGeometry(artwork.title, {
             font: font,
-            size: 2,
+            size: 1.5,
             height: 0.1,
             curveSegments: 12,
             bevelEnabled: false,
@@ -562,7 +562,7 @@ function createArtworkText() {
           if (artwork.artist) {
             const artistGeometry = new TextGeometry(artwork.artist, {
               font: font,
-              size: 1.5,
+              size: 1,
               height: 0.1,
               curveSegments: 12,
               bevelEnabled: false,
