@@ -520,66 +520,84 @@ function onCanvasClick(event) {
 }
 
 function createArtworkText() {
+  console.log("createArtworkText function called");
   const loader = new FontLoader();
-  loader.load("/public/helvetiker_regular.typeface.json", function (font) {
-    artworkInfo.forEach((artwork, index) => {
-      // Create separate geometries for title and artist
-      const titleGeometry = new TextGeometry(artwork.title, {
-        font: font,
-        size: 1.5,
-        height: 0.1,
-        curveSegments: 12,
-        bevelEnabled: false,
+  loader.load(
+    "/helvetiker_regular.typeface.json",
+    function (font) {
+      console.log("Font loaded successfully");
+      artworkInfo.forEach((artwork, index) => {
+        console.log(`Creating text for artwork ${index}: ${artwork.title}`);
+        try {
+          // Create separate geometries for title and artist
+          const titleGeometry = new TextGeometry(artwork.title, {
+            font: font,
+            size: 2,
+            height: 0.1,
+            curveSegments: 12,
+            bevelEnabled: false,
+          });
+          titleGeometry.center();
+
+          const textMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0 });
+          const titleMesh = new THREE.Mesh(titleGeometry, textMaterial);
+
+          // Calculate the position to center the text below the artwork
+          const angle = (index / numberOfCanvases) * Math.PI * 2;
+          const textRadius = circleRadius + 3;
+          const textHeight = canvasYPosition - 20;
+
+          titleMesh.position.set(
+            textRadius * Math.cos(angle),
+            textHeight + 1,
+            textRadius * Math.sin(angle)
+          );
+
+          titleMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
+          titleMesh.rotateY(Math.PI);
+
+          scene.add(titleMesh);
+          console.log(`Title mesh added for ${artwork.title}`);
+
+          if (artwork.artist) {
+            const artistGeometry = new TextGeometry(artwork.artist, {
+              font: font,
+              size: 1.5,
+              height: 0.1,
+              curveSegments: 12,
+              bevelEnabled: false,
+            });
+            artistGeometry.center();
+
+            const artistMesh = new THREE.Mesh(artistGeometry, textMaterial);
+
+            artistMesh.position.set(
+              textRadius * Math.cos(angle),
+              textHeight - 1,
+              textRadius * Math.sin(angle)
+            );
+
+            artistMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
+            artistMesh.rotateY(Math.PI);
+
+            scene.add(artistMesh);
+            console.log(`Artist mesh added for ${artwork.artist}`);
+          }
+        } catch (error) {
+          console.error(`Error creating text for artwork ${index}:`, error);
+        }
       });
-      titleGeometry.center();
-
-      const artistGeometry = new TextGeometry(artwork.artist, {
-        font: font,
-        size: 1, // Slightly smaller size for artist name
-        height: 0.1,
-        curveSegments: 12,
-        bevelEnabled: false,
-      });
-      artistGeometry.center();
-
-      const textMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0 });
-
-      const titleMesh = new THREE.Mesh(titleGeometry, textMaterial);
-      const artistMesh = new THREE.Mesh(artistGeometry, textMaterial);
-
-      // Calculate the position to center the text below the artwork
-      const angle = (index / numberOfCanvases) * Math.PI * 2;
-      const textRadius = circleRadius + 3; // Adjust this value to move text closer to or further from the center
-      const textHeight = canvasYPosition - 20; // Adjust this value to move text up or down
-
-      // Position title and artist
-      titleMesh.position.set(
-        textRadius * Math.cos(angle),
-        textHeight + 1.5, // Place title slightly above
-        textRadius * Math.sin(angle)
-      );
-
-      artistMesh.position.set(
-        textRadius * Math.cos(angle),
-        textHeight - 1.5, // Place artist name slightly below
-        textRadius * Math.sin(angle)
-      );
-
-      // Make the text face the center of the circle
-      titleMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
-      titleMesh.rotateY(Math.PI);
-
-      artistMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
-      artistMesh.rotateY(Math.PI);
-
-      scene.add(titleMesh);
-      scene.add(artistMesh);
-    });
-  });
+    },
+    undefined,
+    function (error) {
+      console.error("An error happened while loading the font:", error);
+    }
+  );
 
   // Ensure there's enough light in the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
+  console.log("Ambient light added to the scene");
 }
 
 function onCanvasHover(event) {
