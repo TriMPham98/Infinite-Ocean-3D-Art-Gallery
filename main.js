@@ -523,37 +523,57 @@ function createArtworkText() {
   const loader = new FontLoader();
   loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
     artworkInfo.forEach((artwork, index) => {
-      const textGeometry = new TextGeometry(
-        `${artwork.title}\n${artwork.artist}`,
-        {
-          font: font,
-          size: 2,
-          height: 0.1,
-          curveSegments: 12,
-          bevelEnabled: false,
-        }
-      );
-      textGeometry.center();
+      // Create separate geometries for title and artist
+      const titleGeometry = new TextGeometry(artwork.title, {
+        font: font,
+        size: 2,
+        height: 0.1,
+        curveSegments: 12,
+        bevelEnabled: false,
+      });
+      titleGeometry.center();
+
+      const artistGeometry = new TextGeometry(artwork.artist, {
+        font: font,
+        size: 1.5, // Slightly smaller size for artist name
+        height: 0.1,
+        curveSegments: 12,
+        bevelEnabled: false,
+      });
+      artistGeometry.center();
 
       const textMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0 });
-      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+      const titleMesh = new THREE.Mesh(titleGeometry, textMaterial);
+      const artistMesh = new THREE.Mesh(artistGeometry, textMaterial);
 
       // Calculate the position to center the text below the artwork
       const angle = (index / numberOfCanvases) * Math.PI * 2;
       const textRadius = circleRadius + 3; // Adjust this value to move text closer to or further from the center
       const textHeight = canvasYPosition - 20; // Adjust this value to move text up or down
 
-      textMesh.position.set(
+      // Position title and artist
+      titleMesh.position.set(
         textRadius * Math.cos(angle),
-        textHeight,
+        textHeight + 2, // Place title slightly above
+        textRadius * Math.sin(angle)
+      );
+
+      artistMesh.position.set(
+        textRadius * Math.cos(angle),
+        textHeight - 2, // Place artist name slightly below
         textRadius * Math.sin(angle)
       );
 
       // Make the text face the center of the circle
-      textMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
-      textMesh.rotateY(Math.PI);
+      titleMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
+      titleMesh.rotateY(Math.PI);
 
-      scene.add(textMesh);
+      artistMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
+      artistMesh.rotateY(Math.PI);
+
+      scene.add(titleMesh);
+      scene.add(artistMesh);
     });
   });
 
