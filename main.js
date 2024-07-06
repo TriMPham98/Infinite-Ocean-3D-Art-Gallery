@@ -526,7 +526,7 @@ function createArtworkText() {
       // Create separate geometries for title and artist
       const titleGeometry = new TextGeometry(artwork.title, {
         font: font,
-        size: 2,
+        size: 1.5,
         height: 0.1,
         curveSegments: 12,
         bevelEnabled: false,
@@ -535,7 +535,7 @@ function createArtworkText() {
 
       const artistGeometry = new TextGeometry(artwork.artist, {
         font: font,
-        size: 1.5, // Slightly smaller size for artist name
+        size: 1, // Slightly smaller size for artist name
         height: 0.1,
         curveSegments: 12,
         bevelEnabled: false,
@@ -555,13 +555,13 @@ function createArtworkText() {
       // Position title and artist
       titleMesh.position.set(
         textRadius * Math.cos(angle),
-        textHeight + 2, // Place title slightly above
+        textHeight + 1.5, // Place title slightly above
         textRadius * Math.sin(angle)
       );
 
       artistMesh.position.set(
         textRadius * Math.cos(angle),
-        textHeight - 2, // Place artist name slightly below
+        textHeight - 1.5, // Place artist name slightly below
         textRadius * Math.sin(angle)
       );
 
