@@ -77,7 +77,7 @@ const artworkInfo = [
     position: new THREE.Vector3(0, 0, 0),
   },
   {
-    title: "Sleepin' Seal", // image8
+    title: "Sleepy by the Sea", // image8
     artist: "",
     position: new THREE.Vector3(0, 0, 0),
   },
