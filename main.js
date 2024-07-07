@@ -367,7 +367,18 @@ async function init() {
   controls.zoomSpeed = 0.69;
   controls.rotateSpeed = 0.36;
   controls.dampingFactor = 0.05;
+  controls.enablePan = false; // Disable right-click panning
+  controls.mouseButtons = {
+    LEFT: THREE.MOUSE.ROTATE,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT: THREE.MOUSE.NONE,
+  };
   controls.update();
+
+  // Prevent context menu on right-click
+  renderer.domElement.addEventListener("contextmenu", (e) =>
+    e.preventDefault()
+  );
 
   renderer.domElement.addEventListener("click", onCanvasClick);
   renderer.domElement.addEventListener("mousemove", onCanvasHover);
