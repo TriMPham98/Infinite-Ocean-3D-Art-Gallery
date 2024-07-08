@@ -263,3 +263,10 @@ canvas {
 #loading-text {
   transition: opacity 1s ease-out;
 }
+
+/* Media Query for Mobile Devices */
+@media (max-width: 1024px) {
+  #controls-container {
+    display: none;
+  }
+}
