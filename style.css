@@ -2,6 +2,7 @@
 * {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 html,
@@ -264,9 +265,39 @@ canvas {
   transition: opacity 1s ease-out;
 }
 
+/* Orientation Message Styles */
+#orientation-message {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  font-size: 24px;
+  z-index: 2000;
+}
+
 /* Media Query for Mobile Devices */
 @media (max-width: 1024px) {
   #controls-container {
     display: none;
+  }
+
+  @media (orientation: portrait) {
+    #orientation-message {
+      display: flex;
+    }
+    #loading-screen,
+    #scene-container,
+    #app,
+    #volume-toggle {
+      display: none;
+    }
   }
 }

@@ -28,6 +28,7 @@ const progressText = document.getElementById("progress-text");
 const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
 const selectSound = new Audio("/modernSelect.wav");
+const orientationMessage = document.getElementById("orientation-message");
 
 // Constants
 const radius = progressRing.r.baseVal.value;
@@ -133,6 +134,30 @@ volumeToggleBtn.addEventListener("click", toggleMusic);
 window.addEventListener("keydown", handleKeyPress);
 window.addEventListener("resize", onWindowResize, false);
 
+function checkOrientation() {
+  if (window.innerWidth <= 1024) {
+    if (window.orientation === 0 || window.orientation === 180) {
+      orientationMessage.style.display = "flex";
+      loadingScreen.style.display = "none";
+      sceneContainer.style.display = "none";
+      app.style.display = "none";
+      volumeToggleBtn.style.display = "none";
+    } else {
+      orientationMessage.style.display = "none";
+      loadingScreen.style.display = "flex";
+      sceneContainer.style.display = "block";
+      app.style.display = "block";
+      volumeToggleBtn.style.display = "block";
+    }
+  } else {
+    orientationMessage.style.display = "none";
+    loadingScreen.style.display = "flex";
+    sceneContainer.style.display = "block";
+    app.style.display = "block";
+    volumeToggleBtn.style.display = "block";
+  }
+}
+
 // Main Functions
 async function init() {
   const manager = new THREE.LoadingManager();
@@ -179,6 +204,7 @@ async function init() {
           });
 
           assetsLoaded = true;
+          checkOrientation(); // Check orientation after assets are loaded
         }, 100);
       }, 690);
     }, 1500);
@@ -390,6 +416,11 @@ async function init() {
 
   renderer.render(scene, camera);
   createArtworkText();
+
+  // Call checkOrientation on page load and whenever the orientation changes
+  window.addEventListener("load", checkOrientation);
+  window.addEventListener("orientationchange", checkOrientation);
+  window.addEventListener("resize", checkOrientation);
 }
 
 function animate() {
@@ -464,6 +495,7 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   controls.update();
   render();
+  checkOrientation();
 }
 
 function panToCenter() {
