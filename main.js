@@ -135,19 +135,26 @@ window.addEventListener("keydown", handleKeyPress);
 window.addEventListener("resize", onWindowResize, false);
 
 function checkOrientation() {
-  if (window.innerWidth <= 1024) {
-    if (window.orientation === 0 || window.orientation === 180) {
-      orientationMessage.style.display = "flex";
-      loadingScreen.style.display = "none";
-      sceneContainer.style.display = "none";
-      app.style.display = "none";
-      volumeToggleBtn.style.display = "none";
-    } else {
+  if (!assetsLoaded) {
+    return; // Don't check orientation if assets aren't loaded
+  }
+
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const isMobile = window.innerWidth <= 1024;
+
+  if (isMobile) {
+    if (isLandscape) {
       orientationMessage.style.display = "none";
       loadingScreen.style.display = "flex";
       sceneContainer.style.display = "block";
       app.style.display = "block";
       volumeToggleBtn.style.display = "block";
+    } else {
+      orientationMessage.style.display = "flex";
+      loadingScreen.style.display = "none";
+      sceneContainer.style.display = "none";
+      app.style.display = "none";
+      volumeToggleBtn.style.display = "none";
     }
   } else {
     orientationMessage.style.display = "none";

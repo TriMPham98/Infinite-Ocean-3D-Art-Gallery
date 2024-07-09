@@ -288,16 +288,4 @@ canvas {
   #controls-container {
     display: none;
   }
-
-  @media (orientation: portrait) {
-    #orientation-message {
-      display: flex;
-    }
-    #loading-screen,
-    #scene-container,
-    #app,
-    #volume-toggle {
-      display: none;
-    }
-  }
 }
