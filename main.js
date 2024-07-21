@@ -213,7 +213,7 @@ async function init() {
           assetsLoaded = true;
           checkOrientation(); // Check orientation after assets are loaded
         }, 100);
-      }, 690);
+      }, 1690);
     }, 1500);
   };
 
