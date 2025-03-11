@@ -7,6 +7,34 @@ import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { gsap } from "gsap";
 
+// Global error handler
+window.addEventListener("error", function (event) {
+  console.error("Global error caught:", event.error || event.message);
+
+  // Display error to user
+  const loadingText = document.getElementById("loading-text");
+  if (loadingText) {
+    loadingText.textContent =
+      "An error occurred. Please check console and refresh.";
+    loadingText.style.color = "red";
+  }
+
+  // Prevent white screen by ensuring loading screen remains visible
+  const loadingScreen = document.getElementById("loading-screen");
+  if (loadingScreen) {
+    loadingScreen.style.opacity = "1";
+    loadingScreen.style.display = "flex";
+  }
+
+  return false;
+});
+
+// Global promise rejection handler
+window.addEventListener("unhandledrejection", function (event) {
+  console.error("Unhandled promise rejection:", event.reason);
+  return false;
+});
+
 // Global Variables
 let camera, scene, renderer, sunMesh;
 let controls, water, sun;
@@ -134,6 +162,25 @@ volumeToggleBtn.addEventListener("click", toggleMusic);
 window.addEventListener("keydown", handleKeyPress);
 window.addEventListener("resize", onWindowResize, false);
 
+// Function to preload audio with fallback
+function preloadAudio(audioElement, fallbackSrc) {
+  audioElement.addEventListener("error", function (e) {
+    console.error(`Error loading audio from ${audioElement.src}:`, e);
+    if (audioElement.src.startsWith(window.location.origin + "/")) {
+      const newSrc = audioElement.src.replace(
+        window.location.origin + "/",
+        window.location.origin + "/"
+      );
+      console.log(`Trying fallback audio source: ${newSrc}`);
+      audioElement.src = fallbackSrc || newSrc;
+    }
+  });
+}
+
+// Preload audio files
+preloadAudio(backgroundMusic, "zenPiano.mp3");
+preloadAudio(selectSound, "modernSelect.wav");
+
 function checkOrientation() {
   if (!assetsLoaded) {
     return; // Don't check orientation if assets aren't loaded
@@ -167,10 +214,12 @@ function checkOrientation() {
 
 // Main Functions
 async function init() {
+  console.log("Initializing application...");
   const manager = new THREE.LoadingManager();
   let imagesLoaded = 0;
 
   manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+    console.log(`Loading: ${url} (${itemsLoaded}/${itemsTotal})`);
     const progress = (itemsLoaded / itemsTotal) * 100;
     setProgress(progress);
   };
@@ -218,23 +267,60 @@ async function init() {
   };
 
   manager.onError = function (url) {
-    console.log("There was an error loading " + url);
+    console.error("There was an error loading " + url);
+    // Display error message to user
+    const loadingText = document.getElementById("loading-text");
+    if (loadingText) {
+      loadingText.textContent =
+        "Error loading assets. Please refresh the page.";
+      loadingText.style.color = "red";
+    }
   };
 
   const loader = new THREE.TextureLoader(manager);
 
   function loadTexture(url) {
     return new Promise((resolve, reject) => {
+      // Try to load with the provided URL
       loader.load(
         url,
         function (texture) {
           imagesLoaded++;
+          console.log(`Successfully loaded texture: ${url}`);
           resolve(texture);
         },
         undefined,
         function (err) {
           console.error(`Error loading ${url}:`, err);
-          reject(err);
+
+          // If the URL starts with a slash, try without it (fallback for path resolution issues)
+          if (url.startsWith("/")) {
+            console.log(
+              `Attempting to load without leading slash: ${url.substring(1)}`
+            );
+            loader.load(
+              url.substring(1),
+              function (texture) {
+                imagesLoaded++;
+                console.log(
+                  `Successfully loaded texture with fallback: ${url.substring(
+                    1
+                  )}`
+                );
+                resolve(texture);
+              },
+              undefined,
+              function (fallbackErr) {
+                console.error(
+                  `Fallback loading also failed for ${url.substring(1)}:`,
+                  fallbackErr
+                );
+                reject(fallbackErr);
+              }
+            );
+          } else {
+            reject(err);
+          }
         }
       );
     });
@@ -461,19 +547,41 @@ function toggleMusic() {
 }
 
 function onStartButtonClick() {
+  console.log("Start button clicked");
   if (!assetsLoaded) {
     console.log("Assets not fully loaded yet. Please wait.");
     return;
   }
-  selectSound.play();
-  loadingScreen.style.opacity = "0";
-  sceneContainer.style.opacity = "1";
-  setTimeout(() => {
-    loadingScreen.style.display = "none";
-  }, 2000);
-  animate();
-  backgroundMusic.play().catch((e) => console.log("Audio play failed:", e));
-  panToCenter();
+
+  try {
+    selectSound
+      .play()
+      .catch((e) => console.error("Error playing select sound:", e));
+    loadingScreen.style.opacity = "0";
+    sceneContainer.style.opacity = "1";
+
+    setTimeout(() => {
+      loadingScreen.style.display = "none";
+    }, 2000);
+
+    try {
+      animate();
+      console.log("Animation started");
+    } catch (error) {
+      console.error("Error starting animation:", error);
+    }
+
+    backgroundMusic.play().catch((e) => console.error("Audio play failed:", e));
+
+    try {
+      panToCenter();
+      console.log("Camera panned to center");
+    } catch (error) {
+      console.error("Error panning camera:", error);
+    }
+  } catch (error) {
+    console.error("Error in start button click handler:", error);
+  }
 }
 
 function handleKeyPress(event) {
