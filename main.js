@@ -46,6 +46,7 @@ let currentCanvasIndex = 0;
 let isNightMode = false;
 let skyUniforms;
 let assetsLoaded = false;
+let stars;
 
 // DOM Elements
 const startButton = document.getElementById("start-button");
@@ -514,6 +515,9 @@ async function init() {
   window.addEventListener("load", checkOrientation);
   window.addEventListener("orientationchange", checkOrientation);
   window.addEventListener("resize", checkOrientation);
+
+  // Create stars (initially hidden)
+  createStars();
 }
 
 function animate() {
@@ -787,12 +791,18 @@ function toggleNightMode() {
     gsap.to(skyUniforms["rayleigh"], { value: 2, duration: 3.69 });
     gsap.to(skyUniforms["mieCoefficient"], { value: 0.005, duration: 3.69 });
     gsap.to(skyUniforms["mieDirectionalG"], { value: 0.8, duration: 3.69 });
+
+    // Fade out stars
+    gsap.to(stars.material, { opacity: 0, duration: 2.5 });
   } else {
     // Transition to night mode
     gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3.69 });
     gsap.to(skyUniforms["rayleigh"], { value: 0.01, duration: 3.69 });
     gsap.to(skyUniforms["mieCoefficient"], { value: 1.01, duration: 3.69 });
     gsap.to(skyUniforms["mieDirectionalG"], { value: -1.01, duration: 3.69 });
+
+    // Fade in stars
+    gsap.to(stars.material, { opacity: 1, duration: 3.0 });
   }
   isNightMode = !isNightMode;
 }
@@ -826,6 +836,36 @@ function toggleFullscreen() {
       document.msExitFullscreen();
     }
   }
+}
+
+function createStars() {
+  // Create a star field
+  const starsGeometry = new THREE.BufferGeometry();
+  const starsMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 1,
+    transparent: true,
+    opacity: 0,
+    sizeAttenuation: true,
+  });
+
+  const starsVertices = [];
+  const starsCount = 2000;
+  const starsRadius = 5000;
+
+  for (let i = 0; i < starsCount; i++) {
+    const x = THREE.MathUtils.randFloatSpread(starsRadius);
+    const y = THREE.MathUtils.randFloatSpread(starsRadius / 2) + 500; // Keep stars above horizon
+    const z = THREE.MathUtils.randFloatSpread(starsRadius);
+    starsVertices.push(x, y, z);
+  }
+
+  starsGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(starsVertices, 3)
+  );
+  stars = new THREE.Points(starsGeometry, starsMaterial);
+  scene.add(stars);
 }
 
 // Initialize the application
