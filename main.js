@@ -9,8 +9,6 @@ import { gsap } from "gsap";
 
 // Global error handler
 window.addEventListener("error", function (event) {
-  console.error("Global error caught:", event.error || event.message);
-
   // Display error to user
   const loadingText = document.getElementById("loading-text");
   if (loadingText) {
@@ -31,7 +29,6 @@ window.addEventListener("error", function (event) {
 
 // Global promise rejection handler
 window.addEventListener("unhandledrejection", function (event) {
-  console.error("Unhandled promise rejection:", event.reason);
   return false;
 });
 
@@ -166,13 +163,11 @@ window.addEventListener("resize", onWindowResize, false);
 // Function to preload audio with fallback
 function preloadAudio(audioElement, fallbackSrc) {
   audioElement.addEventListener("error", function (e) {
-    console.error(`Error loading audio from ${audioElement.src}:`, e);
     if (audioElement.src.startsWith(window.location.origin + "/")) {
       const newSrc = audioElement.src.replace(
         window.location.origin + "/",
         window.location.origin + "/"
       );
-      console.log(`Trying fallback audio source: ${newSrc}`);
       audioElement.src = fallbackSrc || newSrc;
     }
   });
@@ -215,12 +210,10 @@ function checkOrientation() {
 
 // Main Functions
 async function init() {
-  console.log("Initializing application...");
   const manager = new THREE.LoadingManager();
   let imagesLoaded = 0;
 
   manager.onProgress = function (url, itemsLoaded, itemsTotal) {
-    console.log(`Loading: ${url} (${itemsLoaded}/${itemsTotal})`);
     const progress = (itemsLoaded / itemsTotal) * 100;
     setProgress(progress);
   };
@@ -230,8 +223,6 @@ async function init() {
   manager.onLoad = function () {
     if (onLoadExecuted) return;
     onLoadExecuted = true;
-
-    console.log("Loading complete");
 
     const loadingContainer = document.getElementById("loading-container");
     const startButton = document.getElementById("start-button");
@@ -268,7 +259,6 @@ async function init() {
   };
 
   manager.onError = function (url) {
-    console.error("There was an error loading " + url);
     // Display error message to user
     const loadingText = document.getElementById("loading-text");
     if (loadingText) {
@@ -287,35 +277,20 @@ async function init() {
         url,
         function (texture) {
           imagesLoaded++;
-          console.log(`Successfully loaded texture: ${url}`);
           resolve(texture);
         },
         undefined,
         function (err) {
-          console.error(`Error loading ${url}:`, err);
-
           // If the URL starts with a slash, try without it (fallback for path resolution issues)
           if (url.startsWith("/")) {
-            console.log(
-              `Attempting to load without leading slash: ${url.substring(1)}`
-            );
             loader.load(
               url.substring(1),
               function (texture) {
                 imagesLoaded++;
-                console.log(
-                  `Successfully loaded texture with fallback: ${url.substring(
-                    1
-                  )}`
-                );
                 resolve(texture);
               },
               undefined,
               function (fallbackErr) {
-                console.error(
-                  `Fallback loading also failed for ${url.substring(1)}:`,
-                  fallbackErr
-                );
                 reject(fallbackErr);
               }
             );
@@ -551,16 +526,12 @@ function toggleMusic() {
 }
 
 function onStartButtonClick() {
-  console.log("Start button clicked");
   if (!assetsLoaded) {
-    console.log("Assets not fully loaded yet. Please wait.");
     return;
   }
 
   try {
-    selectSound
-      .play()
-      .catch((e) => console.error("Error playing select sound:", e));
+    selectSound.play().catch(() => {});
     loadingScreen.style.opacity = "0";
     sceneContainer.style.opacity = "1";
 
@@ -570,21 +541,19 @@ function onStartButtonClick() {
 
     try {
       animate();
-      console.log("Animation started");
     } catch (error) {
-      console.error("Error starting animation:", error);
+      // Animation error handling
     }
 
-    backgroundMusic.play().catch((e) => console.error("Audio play failed:", e));
+    backgroundMusic.play().catch(() => {});
 
     try {
       panToCenter();
-      console.log("Camera panned to center");
     } catch (error) {
-      console.error("Error panning camera:", error);
+      // Camera panning error handling
     }
   } catch (error) {
-    console.error("Error in start button click handler:", error);
+    // Start button click error handling
   }
 }
 
@@ -679,21 +648,16 @@ function onCanvasClick(event) {
   const sunIntersects = raycaster.intersectObject(sunMesh);
   if (sunIntersects.length > 0) {
     selectSound.play();
-    console.log("(Before click) Night mode: " + isNightMode);
-    console.log("Sun is clicked");
     toggleNightMode();
   }
 }
 
 function createArtworkText() {
-  console.log("createArtworkText function called");
   const loader = new FontLoader();
   loader.load(
     "/helvetiker_regular.typeface.json",
     function (font) {
-      console.log("Font loaded successfully");
       artworkInfo.forEach((artwork, index) => {
-        console.log(`Creating text for artwork ${index}: ${artwork.title}`);
         try {
           // Create separate geometries for title and artist
           const titleGeometry = new TextGeometry(artwork.title, {
@@ -723,7 +687,6 @@ function createArtworkText() {
           titleMesh.rotateY(Math.PI);
 
           scene.add(titleMesh);
-          console.log(`Title mesh added for ${artwork.title}`);
 
           if (artwork.artist) {
             const artistGeometry = new TextGeometry(artwork.artist, {
@@ -747,23 +710,21 @@ function createArtworkText() {
             artistMesh.rotateY(Math.PI);
 
             scene.add(artistMesh);
-            console.log(`Artist mesh added for ${artwork.artist}`);
           }
         } catch (error) {
-          console.error(`Error creating text for artwork ${index}:`, error);
+          // Error handling for text creation
         }
       });
     },
     undefined,
     function (error) {
-      console.error("An error happened while loading the font:", error);
+      // Font loading error handling
     }
   );
 
   // Ensure there's enough light in the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
-  console.log("Ambient light added to the scene");
 }
 
 function onCanvasHover(event) {
@@ -871,8 +832,8 @@ function createStars() {
 // Initialize the application
 init()
   .then(() => {
-    console.log("Initialization complete");
+    // Initialization complete
   })
   .catch((error) => {
-    console.error("Initialization failed:", error);
+    // Initialization failed
   });
