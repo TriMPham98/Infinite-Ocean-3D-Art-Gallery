@@ -43,6 +43,7 @@ let currentCanvasIndex = 0;
 let isNightMode = false;
 let skyUniforms;
 let assetsLoaded = false;
+let isOrientationChanging = false;
 
 // DOM Elements
 const startButton = document.getElementById("start-button");
@@ -205,6 +206,32 @@ function checkOrientation() {
     app.style.display = "block";
     volumeToggleBtn.style.display = "block";
   }
+}
+
+// Modified orientation change handler
+function handleOrientationChange() {
+  isOrientationChanging = true;
+
+  // Use a timeout to ensure screen dimensions are fully updated
+  setTimeout(() => {
+    checkOrientation();
+
+    // Update camera and renderer after orientation change
+    if (camera && renderer) {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (controls) {
+        controls.update();
+      }
+      render();
+    }
+
+    // Allow clicks again after a short delay
+    setTimeout(() => {
+      isOrientationChanging = false;
+    }, 100);
+  }, 100);
 }
 
 // Main Functions
@@ -487,8 +514,8 @@ async function init() {
 
   // Call checkOrientation on page load and whenever the orientation changes
   window.addEventListener("load", checkOrientation);
-  window.addEventListener("orientationchange", checkOrientation);
-  window.addEventListener("resize", checkOrientation);
+  window.addEventListener("orientationchange", handleOrientationChange);
+  window.addEventListener("resize", handleOrientationChange);
 }
 
 function animate() {
@@ -583,7 +610,9 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   controls.update();
   render();
-  checkOrientation();
+
+  // Use the new orientation handler
+  handleOrientationChange();
 }
 
 function panToCenter() {
@@ -626,8 +655,17 @@ function createPulseAnimation(light, minIntensity, maxIntensity, duration) {
 }
 
 function onCanvasClick(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  // Prevent clicks during orientation changes
+  if (isOrientationChanging) {
+    return;
+  }
+
+  // Ensure we have current window dimensions
+  const currentWidth = window.innerWidth;
+  const currentHeight = window.innerHeight;
+
+  mouse.x = (event.clientX / currentWidth) * 2 - 1;
+  mouse.y = -(event.clientY / currentHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster
     .intersectObjects(scene.children)
@@ -724,8 +762,17 @@ function createArtworkText() {
 }
 
 function onCanvasHover(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  // Prevent hover effects during orientation changes
+  if (isOrientationChanging) {
+    return;
+  }
+
+  // Ensure we have current window dimensions
+  const currentWidth = window.innerWidth;
+  const currentHeight = window.innerHeight;
+
+  mouse.x = (event.clientX / currentWidth) * 2 - 1;
+  mouse.y = -(event.clientY / currentHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
   const intersects = raycaster.intersectObjects(canvases.concat(sunMesh));
