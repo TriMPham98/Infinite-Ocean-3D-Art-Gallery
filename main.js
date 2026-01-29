@@ -872,10 +872,11 @@ function onWindowResize() {
 function panToCenter() {
   const tl = gsap.timeline();
 
-  // Phase 1: Bird's eye swoop down (2.5s)
+  // Phase 1: Swoop down to orbit start position (2.5s)
+  const orbitRadius = 160;
   tl.to(camera.position, {
-    x: 0,
-    y: 120,
+    x: orbitRadius,
+    y: 50,
     z: 0,
     duration: 2.5,
     ease: "power2.inOut",
@@ -900,7 +901,6 @@ function panToCenter() {
     duration: 3,
     ease: "power1.inOut",
     onUpdate: () => {
-      const orbitRadius = 160;
       camera.position.x = orbitRadius * Math.cos(orbitTarget.angle);
       camera.position.z = orbitRadius * Math.sin(orbitTarget.angle);
       camera.position.y = 50 + (orbitTarget.angle / (Math.PI * 0.75)) * -20;
