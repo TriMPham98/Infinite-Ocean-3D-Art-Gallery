@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(du:*)",
+      "Bash(git -C /Users/trimpham98/repos/Infinite-Ocean-3D-Art-Gallery log --oneline -10)",
+      "Bash(git -C /Users/trimpham98/repos/Infinite-Ocean-3D-Art-Gallery log --oneline -20)",
+      "Bash(ls:*)",
+      "Bash(sips:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

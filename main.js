@@ -5,6 +5,12 @@ import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
+import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { gsap } from "gsap";
 
 // Global error handler
@@ -45,6 +51,30 @@ let skyUniforms;
 let assetsLoaded = false;
 let isOrientationChanging = false;
 
+// V1: Post-processing
+let composer, bloomPass;
+
+// P3: Tab visibility & hover throttle
+let isTabVisible = true;
+let lastHoverTime = 0;
+const HOVER_THROTTLE_MS = 50;
+
+// I1: Artwork info panel
+let infoPanel;
+
+// I3: Hover feedback
+let hoveredCanvas = null;
+
+// I4: Auto-tour
+let autoTourInterval = null;
+let isAutoTourActive = false;
+
+// I5: Detail view / zoom
+let isDetailView = false;
+let savedCameraPosition = null;
+let savedControlsTarget = null;
+let detailOverlay;
+
 // DOM Elements
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
@@ -55,6 +85,50 @@ const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
 const selectSound = new Audio("/modernSelect.wav");
 const orientationMessage = document.getElementById("orientation-message");
+
+// I1: Artwork Info Panel DOM
+infoPanel = document.getElementById("artwork-info-panel");
+
+// I5: Detail overlay DOM
+detailOverlay = document.getElementById("detail-overlay");
+
+// P4: Memory Management - dispose utility
+function disposeObject(obj) {
+  if (!obj) return;
+  if (obj.geometry) obj.geometry.dispose();
+  if (obj.material) {
+    if (Array.isArray(obj.material)) {
+      obj.material.forEach((m) => {
+        if (m.map) m.map.dispose();
+        m.dispose();
+      });
+    } else {
+      if (obj.material.map) obj.material.map.dispose();
+      obj.material.dispose();
+    }
+  }
+  if (obj.children) {
+    obj.children.forEach((child) => disposeObject(child));
+  }
+}
+
+// P3: Tab visibility listener
+document.addEventListener("visibilitychange", () => {
+  isTabVisible = !document.hidden;
+});
+
+// P4: Cleanup on page unload
+window.addEventListener("beforeunload", () => {
+  if (scene) {
+    scene.traverse((obj) => disposeObject(obj));
+  }
+  if (renderer) {
+    renderer.dispose();
+  }
+  if (composer) {
+    composer.dispose();
+  }
+});
 
 // Constants
 const radius = progressRing.r.baseVal.value;
@@ -154,9 +228,13 @@ backgroundMusic.loop = true;
 progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
 progressRing.style.strokeDashoffset = circumference;
 
+// I4: Auto-tour toggle button
+const autoTourBtn = document.getElementById("autotour-toggle");
+
 // Event Listeners
 startButton.addEventListener("click", onStartButtonClick);
 volumeToggleBtn.addEventListener("click", toggleMusic);
+autoTourBtn.addEventListener("click", toggleAutoTour);
 window.addEventListener("keydown", handleKeyPress);
 window.addEventListener("resize", onWindowResize, false);
 
@@ -328,8 +406,16 @@ async function init() {
     });
   }
 
-  renderer = new THREE.WebGLRenderer({ alpha: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  // P2: Initialize RectAreaLight uniforms before creating lights
+  RectAreaLightUniformsLib.init();
+
+  // P3: Renderer with capped pixel ratio, antialias, high-performance
+  renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   sceneContainer.appendChild(renderer.domElement);
@@ -469,6 +555,9 @@ async function init() {
 
   updateSun();
 
+  // P4: Dispose pmremGenerator after use
+  pmremGenerator.dispose();
+
   const sunGeometry = new THREE.SphereGeometry(1000, 32, 32);
   const sunMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
@@ -504,6 +593,139 @@ async function init() {
   renderer.domElement.addEventListener("click", onCanvasClick);
   renderer.domElement.addEventListener("mousemove", onCanvasHover);
 
+  // I5: Double-click for detail view
+  renderer.domElement.addEventListener("dblclick", onCanvasDoubleClick);
+
+  // I5: Long-press for mobile detail view
+  let longPressTimer = null;
+  let longPressStartPos = null;
+  renderer.domElement.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length === 1) {
+        longPressStartPos = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        };
+        longPressTimer = setTimeout(() => {
+          onCanvasDoubleClick({
+            clientX: longPressStartPos.x,
+            clientY: longPressStartPos.y,
+          });
+        }, 500);
+      }
+    },
+    { passive: true }
+  );
+  renderer.domElement.addEventListener(
+    "touchmove",
+    (e) => {
+      if (longPressTimer && longPressStartPos && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - longPressStartPos.x;
+        const dy = e.touches[0].clientY - longPressStartPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      }
+    },
+    { passive: true }
+  );
+  renderer.domElement.addEventListener(
+    "touchend",
+    () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    },
+    { passive: true }
+  );
+
+  // I2: Touch Swipe Navigation
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  renderer.domElement.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
+    },
+    { passive: true }
+  );
+  renderer.domElement.addEventListener(
+    "touchend",
+    (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const elapsed = Date.now() - touchStartTime;
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      if (absDx > 50 && elapsed < 500 && absDx > absDy) {
+        pauseAutoTour();
+        if (dx < 0) {
+          selectSound.play();
+          moveToCanvas(currentCanvasIndex - 1);
+        } else {
+          selectSound.play();
+          moveToCanvas(currentCanvasIndex + 1);
+        }
+      }
+    },
+    { passive: true }
+  );
+
+  // V1: Post-processing pipeline (Bloom + Vignette)
+  composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
+
+  bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.3, // strength
+    0.4, // radius
+    0.85 // threshold
+  );
+  composer.addPass(bloomPass);
+
+  // Vignette shader pass
+  const VignetteShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      offset: { value: 0.95 },
+      darkness: { value: 1.2 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float offset;
+      uniform float darkness;
+      uniform sampler2D tDiffuse;
+      varying vec2 vUv;
+      void main() {
+        vec4 texel = texture2D(tDiffuse, vUv);
+        vec2 uv = (vUv - vec2(0.5)) * vec2(offset);
+        gl_FragColor = vec4(mix(texel.rgb, vec3(1.0 - darkness), dot(uv, uv)), texel.a);
+      }
+    `,
+  };
+  const vignettePass = new ShaderPass(VignetteShader);
+  composer.addPass(vignettePass);
+
+  const outputPass = new OutputPass();
+  composer.addPass(outputPass);
+
   await new Promise((resolve) => {
     backgroundMusic.addEventListener("canplaythrough", resolve, { once: true });
     backgroundMusic.load();
@@ -511,6 +733,24 @@ async function init() {
 
   renderer.render(scene, camera);
   createArtworkText();
+
+  // I5: Detail overlay click to exit
+  detailOverlay.addEventListener("click", exitDetailView);
+
+  // I5: Escape key to exit detail view
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isDetailView) {
+      exitDetailView();
+    }
+  });
+
+  // I1: Hide info panel when user starts orbiting
+  controls.addEventListener("start", () => {
+    if (!isDetailView) {
+      hideInfoPanel();
+    }
+    pauseAutoTour();
+  });
 
   // Call checkOrientation on page load and whenever the orientation changes
   window.addEventListener("load", checkOrientation);
@@ -520,13 +760,20 @@ async function init() {
 
 function animate() {
   requestAnimationFrame(animate);
+  // P3: Skip rendering when tab is not visible
+  if (!isTabVisible) return;
   controls.update();
   render();
 }
 
 function render() {
   water.material.uniforms["time"].value += 0.69 / 60.0;
-  renderer.render(scene, camera);
+  // V1: Use composer for post-processing
+  if (composer) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
 // Helper Functions
@@ -590,10 +837,12 @@ function handleKeyPress(event) {
       toggleMusic();
       break;
     case "ArrowRight":
+      pauseAutoTour();
       selectSound.play();
       moveToCanvas(currentCanvasIndex - 1);
       break;
     case "ArrowLeft":
+      pauseAutoTour();
       selectSound.play();
       moveToCanvas(currentCanvasIndex + 1);
       break;
@@ -608,6 +857,10 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  // V1: Resize composer
+  if (composer) {
+    composer.setSize(window.innerWidth, window.innerHeight);
+  }
   controls.update();
   render();
 
@@ -615,21 +868,79 @@ function onWindowResize() {
   handleOrientationChange();
 }
 
+// V3: Cinematic camera entrance with GSAP timeline
 function panToCenter() {
-  const finalPosition = new THREE.Vector3(138.9, 27.5, 0.0);
-  gsap.to(camera.position, {
-    x: finalPosition.x,
-    y: finalPosition.y,
-    z: finalPosition.z,
-    duration: 6.9,
+  const tl = gsap.timeline();
+
+  // Phase 1: Bird's eye swoop down (2.5s)
+  tl.to(camera.position, {
+    x: 0,
+    y: 120,
+    z: 0,
+    duration: 2.5,
     ease: "power2.inOut",
-    onUpdate: function () {
+    onUpdate: () => controls.update(),
+  });
+  tl.to(
+    controls.target,
+    {
+      x: 0,
+      y: 25,
+      z: 0,
+      duration: 2.5,
+      ease: "power2.inOut",
+    },
+    "<"
+  );
+
+  // Phase 2: Orbit around gallery (3s)
+  const orbitTarget = { angle: 0 };
+  tl.to(orbitTarget, {
+    angle: Math.PI * 0.75,
+    duration: 3,
+    ease: "power1.inOut",
+    onUpdate: () => {
+      const orbitRadius = 160;
+      camera.position.x = orbitRadius * Math.cos(orbitTarget.angle);
+      camera.position.z = orbitRadius * Math.sin(orbitTarget.angle);
+      camera.position.y = 50 + (orbitTarget.angle / (Math.PI * 0.75)) * -20;
       controls.update();
     },
   });
+
+  // Phase 3: Settle at first artwork (2s)
+  const firstPos = canvasPositions[0];
+  tl.to(camera.position, {
+    x: firstPos.x,
+    y: firstPos.y - 2.3,
+    z: firstPos.z,
+    duration: 2,
+    ease: "power2.inOut",
+    onUpdate: () => controls.update(),
+    onComplete: () => {
+      showInfoPanel(0);
+      // V4: Start night mode hint timer
+      startNightModeHintTimer();
+    },
+  });
+  tl.to(
+    controls.target,
+    {
+      x: 0,
+      y: 10,
+      z: 0,
+      duration: 2,
+      ease: "power2.inOut",
+    },
+    "<"
+  );
 }
 
 function moveToCanvas(index) {
+  // I5: Exit detail view if active
+  if (isDetailView) {
+    exitDetailView();
+  }
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
   gsap.to(camera.position, {
     x: canvasPositions[currentCanvasIndex].x,
@@ -639,6 +950,10 @@ function moveToCanvas(index) {
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
+    },
+    onComplete: function () {
+      // I1: Show artwork info panel
+      showInfoPanel(currentCanvasIndex);
     },
   });
 }
@@ -659,6 +974,9 @@ function onCanvasClick(event) {
   if (isOrientationChanging) {
     return;
   }
+
+  // I4: Pause auto-tour on user click
+  pauseAutoTour();
 
   // Ensure we have current window dimensions
   const currentWidth = window.innerWidth;
@@ -767,6 +1085,11 @@ function onCanvasHover(event) {
     return;
   }
 
+  // P3: Throttle hover raycasting to 50ms
+  const now = Date.now();
+  if (now - lastHoverTime < HOVER_THROTTLE_MS) return;
+  lastHoverTime = now;
+
   // Ensure we have current window dimensions
   const currentWidth = window.innerWidth;
   const currentHeight = window.innerHeight;
@@ -783,8 +1106,35 @@ function onCanvasHover(event) {
       intersects[0].object === sunMesh)
   ) {
     renderer.domElement.style.cursor = "pointer";
+
+    // I3: Hover visual feedback
+    const hitObj = intersects[0].object;
+    if (canvases.includes(hitObj) && hitObj !== hoveredCanvas) {
+      // Unhover previous
+      if (hoveredCanvas) {
+        gsap.to(hoveredCanvas.material, {
+          emissiveIntensity: 0,
+          duration: 0.3,
+        });
+      }
+      hoveredCanvas = hitObj;
+      hoveredCanvas.material.emissive = new THREE.Color(0x222222);
+      gsap.to(hoveredCanvas.material, {
+        emissiveIntensity: 0.3,
+        duration: 0.3,
+      });
+    }
   } else {
     renderer.domElement.style.cursor = "default";
+
+    // I3: Unhover
+    if (hoveredCanvas) {
+      gsap.to(hoveredCanvas.material, {
+        emissiveIntensity: 0,
+        duration: 0.3,
+      });
+      hoveredCanvas = null;
+    }
   }
 }
 
@@ -795,12 +1145,20 @@ function toggleNightMode() {
     gsap.to(skyUniforms["rayleigh"], { value: 2, duration: 3.69 });
     gsap.to(skyUniforms["mieCoefficient"], { value: 0.005, duration: 3.69 });
     gsap.to(skyUniforms["mieDirectionalG"], { value: 0.8, duration: 3.69 });
+    // V4: Reduce bloom back to default
+    if (bloomPass) {
+      gsap.to(bloomPass, { strength: 0.3, duration: 3.69 });
+    }
   } else {
     // Transition to night mode
     gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3.69 });
     gsap.to(skyUniforms["rayleigh"], { value: 0.01, duration: 3.69 });
     gsap.to(skyUniforms["mieCoefficient"], { value: 1.01, duration: 3.69 });
     gsap.to(skyUniforms["mieDirectionalG"], { value: -1.01, duration: 3.69 });
+    // V4: Enhance bloom glow during night
+    if (bloomPass) {
+      gsap.to(bloomPass, { strength: 0.5, duration: 3.69 });
+    }
   }
   isNightMode = !isNightMode;
 }
@@ -834,6 +1192,153 @@ function toggleFullscreen() {
       document.msExitFullscreen();
     }
   }
+}
+
+// I1: Artwork Info Panel functions
+function showInfoPanel(index) {
+  if (!infoPanel) return;
+  const info = artworkInfo[index];
+  const titleEl = infoPanel.querySelector(".info-title");
+  const artistEl = infoPanel.querySelector(".info-artist");
+  const indexEl = infoPanel.querySelector(".info-index");
+  if (titleEl) titleEl.textContent = info.title;
+  if (artistEl) artistEl.textContent = info.artist || "";
+  if (indexEl) indexEl.textContent = `${index + 1} / ${numberOfCanvases}`;
+  infoPanel.classList.add("visible");
+}
+
+function hideInfoPanel() {
+  if (!infoPanel) return;
+  infoPanel.classList.remove("visible");
+}
+
+// I4: Auto-Tour Mode
+function toggleAutoTour() {
+  const btn = document.getElementById("autotour-toggle");
+  if (isAutoTourActive) {
+    pauseAutoTour();
+  } else {
+    isAutoTourActive = true;
+    if (btn) btn.textContent = "Stop Tour";
+    autoTourInterval = setInterval(() => {
+      moveToCanvas(currentCanvasIndex + 1);
+    }, 6000);
+  }
+}
+
+function pauseAutoTour() {
+  if (!isAutoTourActive) return;
+  isAutoTourActive = false;
+  const btn = document.getElementById("autotour-toggle");
+  if (btn) btn.textContent = "Auto Tour";
+  if (autoTourInterval) {
+    clearInterval(autoTourInterval);
+    autoTourInterval = null;
+  }
+}
+
+// I5: Detail View / Zoom
+function onCanvasDoubleClick(event) {
+  if (isOrientationChanging) return;
+
+  if (isDetailView) {
+    exitDetailView();
+    return;
+  }
+
+  const currentWidth = window.innerWidth;
+  const currentHeight = window.innerHeight;
+  mouse.x = (event.clientX / currentWidth) * 2 - 1;
+  mouse.y = -(event.clientY / currentHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster
+    .intersectObjects(scene.children)
+    .filter((intersect) => canvases.includes(intersect.object));
+
+  if (intersects.length > 0) {
+    intersects.sort((a, b) => a.distance - b.distance);
+    const closestCanvas = intersects[0].object;
+    const canvasIndex = canvases.indexOf(closestCanvas);
+
+    // Save current camera state
+    savedCameraPosition = camera.position.clone();
+    savedControlsTarget = controls.target.clone();
+
+    // Calculate zoom position (60% closer to artwork)
+    const canvasPos = canvasPositions[canvasIndex];
+    const zoomPos = new THREE.Vector3().lerpVectors(
+      camera.position,
+      canvasPos,
+      0.6
+    );
+
+    isDetailView = true;
+    controls.enabled = false;
+    pauseAutoTour();
+
+    // Show overlay
+    if (detailOverlay) {
+      detailOverlay.classList.add("visible");
+    }
+
+    gsap.to(camera.position, {
+      x: zoomPos.x,
+      y: zoomPos.y,
+      z: zoomPos.z,
+      duration: 1.2,
+      ease: "power2.inOut",
+      onUpdate: () => {
+        camera.lookAt(canvasPos);
+      },
+    });
+  }
+}
+
+function exitDetailView() {
+  if (!isDetailView) return;
+  isDetailView = false;
+
+  // Hide overlay
+  if (detailOverlay) {
+    detailOverlay.classList.remove("visible");
+  }
+
+  if (savedCameraPosition && savedControlsTarget) {
+    gsap.to(camera.position, {
+      x: savedCameraPosition.x,
+      y: savedCameraPosition.y,
+      z: savedCameraPosition.z,
+      duration: 1.2,
+      ease: "power2.inOut",
+      onUpdate: () => controls.update(),
+      onComplete: () => {
+        controls.target.copy(savedControlsTarget);
+        controls.enabled = true;
+        controls.update();
+      },
+    });
+  } else {
+    controls.enabled = true;
+    controls.update();
+  }
+}
+
+// V4: Night Mode Discovery Hint
+let nightHintShown = false;
+function startNightModeHintTimer() {
+  if (nightHintShown) return;
+  setTimeout(() => {
+    if (nightHintShown) return;
+    nightHintShown = true;
+    const hint = document.getElementById("night-mode-hint");
+    if (hint) {
+      hint.classList.add("visible");
+      setTimeout(() => {
+        hint.classList.remove("visible");
+      }, 5000);
+    }
+  }, 30000);
 }
 
 // Initialize the application

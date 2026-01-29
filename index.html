@@ -16,6 +16,8 @@
       </p>
     </div>
     <div id="loading-screen">
+      <h1 class="loading-title">Infinite Ocean</h1>
+      <h2 class="loading-subtitle">3D Art Gallery</h2>
       <div id="loading-container">
         <div id="loading-progress">
           <svg class="progress-ring" width="200" height="200">
@@ -58,6 +60,21 @@
     <div id="scene-container"></div>
     <div id="app"></div>
     <button id="volume-toggle">Toggle Sound</button>
+    <button id="autotour-toggle">Auto Tour</button>
+
+    <!-- I1: Artwork Info Panel -->
+    <div id="artwork-info-panel">
+      <div class="info-title"></div>
+      <div class="info-artist"></div>
+      <div class="info-index"></div>
+    </div>
+
+    <!-- V4: Night Mode Discovery Hint -->
+    <div id="night-mode-hint">Click the horizon to toggle night mode</div>
+
+    <!-- I5: Detail View Overlay -->
+    <div id="detail-overlay"></div>
+
     <script type="module" src="/main.js"></script>
   </body>
 </html>
