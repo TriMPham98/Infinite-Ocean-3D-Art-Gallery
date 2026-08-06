@@ -15,7 +15,7 @@ body {
 /* Font Face */
 @font-face {
   font-family: "Montserrat";
-  src: url("/Montserrat-Thin.ttf") format("truetype");
+  src: url("/Montserrat-Thin.ttf") format("truetype"); /* public/ asset at site root */
   font-weight: 100;
 }
 
@@ -283,6 +283,8 @@ canvas {
   cursor: pointer;
   transition: background-color 0.3s ease;
   font-family: "Montserrat", sans-serif;
+  display: none; /* shown after entering the gallery */
+  z-index: 10;
 }
 
 #volume-toggle:hover {
@@ -333,6 +335,7 @@ canvas {
   cursor: pointer;
   transition: background-color 0.3s ease;
   font-family: "Montserrat", sans-serif;
+  display: none; /* shown after entering the gallery */
   z-index: 10;
 }
 

@@ -49,7 +49,15 @@ let currentCanvasIndex = 0;
 let isNightMode = false;
 let skyUniforms;
 let assetsLoaded = false;
+let hasEnteredGallery = false;
 let isOrientationChanging = false;
+
+// Resolve public asset URLs against Vite base (works on Vercel root hosting)
+const assetUrl = (path) => {
+  const clean = path.startsWith("/") ? path.slice(1) : path;
+  const base = import.meta.env.BASE_URL || "/";
+  return base.endsWith("/") ? `${base}${clean}` : `${base}/${clean}`;
+};
 
 // V1: Post-processing
 let composer, bloomPass;
@@ -79,11 +87,12 @@ let detailOverlay;
 const startButton = document.getElementById("start-button");
 const loadingScreen = document.getElementById("loading-screen");
 const sceneContainer = document.getElementById("scene-container");
+const app = document.getElementById("app");
 const progressRing = document.querySelector(".progress-ring__circle");
 const progressText = document.getElementById("progress-text");
 const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
-const selectSound = new Audio("/modernSelect.wav");
+const selectSound = new Audio(assetUrl("modernSelect.wav"));
 const orientationMessage = document.getElementById("orientation-message");
 
 // I1: Artwork Info Panel DOM
@@ -232,28 +241,55 @@ progressRing.style.strokeDashoffset = circumference;
 const autoTourBtn = document.getElementById("autotour-toggle");
 
 // Event Listeners
-startButton.addEventListener("click", onStartButtonClick);
-volumeToggleBtn.addEventListener("click", toggleMusic);
-autoTourBtn.addEventListener("click", toggleAutoTour);
+if (startButton) startButton.addEventListener("click", onStartButtonClick);
+if (volumeToggleBtn) volumeToggleBtn.addEventListener("click", toggleMusic);
+if (autoTourBtn) autoTourBtn.addEventListener("click", toggleAutoTour);
 window.addEventListener("keydown", handleKeyPress);
 window.addEventListener("resize", onWindowResize, false);
 
-// Function to preload audio with fallback
-function preloadAudio(audioElement, fallbackSrc) {
-  audioElement.addEventListener("error", function (e) {
-    if (audioElement.src.startsWith(window.location.origin + "/")) {
-      const newSrc = audioElement.src.replace(
-        window.location.origin + "/",
-        window.location.origin + "/"
-      );
-      audioElement.src = fallbackSrc || newSrc;
+// Wait for audio readiness without blocking forever (common host/mobile hang)
+function waitForAudio(audioElement, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    if (!audioElement) {
+      resolve(false);
+      return;
     }
+
+    if (audioElement.readyState >= 3) {
+      resolve(true);
+      return;
+    }
+
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      audioElement.removeEventListener("canplaythrough", onReady);
+      audioElement.removeEventListener("error", onError);
+      resolve(ok);
+    };
+
+    const onReady = () => finish(true);
+    const onError = () => finish(false);
+
+    audioElement.addEventListener("canplaythrough", onReady, { once: true });
+    audioElement.addEventListener("error", onError, { once: true });
+
+    try {
+      audioElement.load();
+    } catch {
+      finish(false);
+      return;
+    }
+
+    setTimeout(() => finish(audioElement.readyState >= 2), timeoutMs);
   });
 }
 
-// Preload audio files
-preloadAudio(backgroundMusic, "zenPiano.mp3");
-preloadAudio(selectSound, "modernSelect.wav");
+// Point audio at base-aware public paths
+if (backgroundMusic) {
+  backgroundMusic.src = assetUrl("zenPiano.mp3");
+}
 
 function checkOrientation() {
   if (!assetsLoaded) {
@@ -263,26 +299,35 @@ function checkOrientation() {
   const isLandscape = window.innerWidth > window.innerHeight;
   const isMobile = window.innerWidth <= 1024;
 
-  if (isMobile) {
-    if (isLandscape) {
-      orientationMessage.style.display = "none";
-      loadingScreen.style.display = "flex";
-      sceneContainer.style.display = "block";
-      app.style.display = "block";
-      volumeToggleBtn.style.display = "block";
-    } else {
-      orientationMessage.style.display = "flex";
-      loadingScreen.style.display = "none";
-      sceneContainer.style.display = "none";
-      app.style.display = "none";
-      volumeToggleBtn.style.display = "none";
+  const showChrome = (show) => {
+    if (sceneContainer) sceneContainer.style.display = show ? "block" : "none";
+    if (app) app.style.display = show ? "block" : "none";
+    if (volumeToggleBtn) {
+      volumeToggleBtn.style.display = show && hasEnteredGallery ? "block" : "none";
     }
-  } else {
-    orientationMessage.style.display = "none";
-    loadingScreen.style.display = "flex";
-    sceneContainer.style.display = "block";
-    app.style.display = "block";
-    volumeToggleBtn.style.display = "block";
+    const autoTour = document.getElementById("autotour-toggle");
+    if (autoTour) {
+      autoTour.style.display = show && hasEnteredGallery ? "block" : "none";
+    }
+  };
+
+  if (isMobile && !isLandscape) {
+    if (orientationMessage) orientationMessage.style.display = "flex";
+    if (loadingScreen) loadingScreen.style.display = "none";
+    showChrome(false);
+    return;
+  }
+
+  if (orientationMessage) orientationMessage.style.display = "none";
+  showChrome(true);
+
+  // Only show the loading/enter screen before the user enters the gallery
+  if (loadingScreen) {
+    if (hasEnteredGallery) {
+      loadingScreen.style.display = "none";
+    } else {
+      loadingScreen.style.display = "flex";
+    }
   }
 }
 
@@ -375,32 +420,33 @@ async function init() {
   const loader = new THREE.TextureLoader(manager);
 
   function loadTexture(url) {
+    const primary = assetUrl(url);
     return new Promise((resolve, reject) => {
-      // Try to load with the provided URL
       loader.load(
-        url,
+        primary,
         function (texture) {
           imagesLoaded++;
           resolve(texture);
         },
         undefined,
-        function (err) {
-          // If the URL starts with a slash, try without it (fallback for path resolution issues)
-          if (url.startsWith("/")) {
-            loader.load(
-              url.substring(1),
-              function (texture) {
-                imagesLoaded++;
-                resolve(texture);
-              },
-              undefined,
-              function (fallbackErr) {
-                reject(fallbackErr);
-              }
-            );
-          } else {
-            reject(err);
+        function () {
+          // Fallback: try the raw path (covers absolute vs relative hosting quirks)
+          const fallback = url.startsWith("/") ? url.slice(1) : `/${url}`;
+          if (fallback === primary) {
+            reject(new Error(`Failed to load texture: ${primary}`));
+            return;
           }
+          loader.load(
+            fallback,
+            function (texture) {
+              imagesLoaded++;
+              resolve(texture);
+            },
+            undefined,
+            function (fallbackErr) {
+              reject(fallbackErr || new Error(`Failed to load texture: ${primary}`));
+            }
+          );
         }
       );
     });
@@ -435,7 +481,7 @@ async function init() {
   sun = new THREE.Vector3();
 
   const waterGeometry = new THREE.PlaneGeometry(50000, 50000);
-  const waterNormals = await loadTexture("/waternormals.jpg");
+  const waterNormals = await loadTexture("waternormals.jpg");
   waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
 
   water = new Water(waterGeometry, {
@@ -453,7 +499,7 @@ async function init() {
   scene.add(water);
 
   const circleRadius = 90;
-  const marbleTexture = await loadTexture("/whiteMarble.jpg");
+  const marbleTexture = await loadTexture("whiteMarble.jpg");
   const frameDepth = 1.0;
   const frameOffset = 1.5;
   const frameRadius = circleRadius - 0.51;
@@ -510,7 +556,7 @@ async function init() {
 
     createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
 
-    const texture = await loadTexture("/image" + i + ".jpg");
+    const texture = await loadTexture("image" + i + ".jpg");
     const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
@@ -726,10 +772,8 @@ async function init() {
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
-  await new Promise((resolve) => {
-    backgroundMusic.addEventListener("canplaythrough", resolve, { once: true });
-    backgroundMusic.load();
-  });
+  // Audio must not block gallery entry if the file is slow/unavailable
+  await waitForAudio(backgroundMusic, 8000);
 
   renderer.render(scene, camera);
   createArtworkText();
@@ -796,14 +840,19 @@ function toggleMusic() {
 }
 
 function onStartButtonClick() {
-  if (!assetsLoaded) {
+  if (!assetsLoaded || hasEnteredGallery) {
     return;
   }
 
   try {
+    hasEnteredGallery = true;
     selectSound.play().catch(() => {});
     loadingScreen.style.opacity = "0";
     sceneContainer.style.opacity = "1";
+
+    if (volumeToggleBtn) volumeToggleBtn.style.display = "block";
+    const autoTour = document.getElementById("autotour-toggle");
+    if (autoTour) autoTour.style.display = "block";
 
     setTimeout(() => {
       loadingScreen.style.display = "none";
@@ -815,7 +864,9 @@ function onStartButtonClick() {
       // Animation error handling
     }
 
-    backgroundMusic.play().catch(() => {});
+    if (backgroundMusic) {
+      backgroundMusic.play().catch(() => {});
+    }
 
     try {
       panToCenter();
@@ -1007,7 +1058,7 @@ function onCanvasClick(event) {
 function createArtworkText() {
   const loader = new FontLoader();
   loader.load(
-    "/helvetiker_regular.typeface.json",
+    assetUrl("helvetiker_regular.typeface.json"),
     function (font) {
       artworkInfo.forEach((artwork, index) => {
         try {
@@ -1342,10 +1393,22 @@ function startNightModeHintTimer() {
 }
 
 // Initialize the application
-init()
-  .then(() => {
-    // Initialization complete
-  })
-  .catch((error) => {
-    // Initialization failed
-  });
+init().catch(() => {
+  const loadingText = document.getElementById("loading-text");
+  if (loadingText) {
+    loadingText.textContent =
+      "Failed to load the gallery. Please refresh the page.";
+    loadingText.style.color = "red";
+  }
+  // Surface Enter if some assets made it through so the UI is not stuck
+  if (!assetsLoaded) {
+    assetsLoaded = true;
+    const startBtn = document.getElementById("start-button");
+    const loadingContainer = document.getElementById("loading-container");
+    if (loadingContainer) loadingContainer.style.display = "none";
+    if (startBtn) {
+      startBtn.style.display = "block";
+      startBtn.classList.add("visible");
+    }
+  }
+});
