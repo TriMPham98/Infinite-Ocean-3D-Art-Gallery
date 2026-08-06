@@ -46,7 +46,16 @@ let canvases = [];
 const numberOfCanvases = 14;
 let currentCanvasIndex = 0;
 let isNightMode = false;
+let isNightTransitioning = false;
 let skyUniforms;
+let skyMesh;
+let skyParameters = { elevation: 1.2, azimuth: -150 };
+let pmremGenerator;
+let ambientLight;
+let sunLight;
+let moonMesh;
+let rectLights = [];
+let dayEnvironmentMap = null;
 let assetsLoaded = false;
 let hasEnteredGallery = false;
 let isOrientationChanging = false;
@@ -56,6 +65,54 @@ const assetUrl = (path) => {
   const clean = path.startsWith("/") ? path.slice(1) : path;
   const base = import.meta.env.BASE_URL || "/";
   return base.endsWith("/") ? `${base}${clean}` : `${base}/${clean}`;
+};
+
+// Day / night lighting presets (coordinated sky + scene lights)
+// Night keeps the sun disk above the horizon as a "moon" (same click target).
+const DAY_LIGHTING = {
+  turbidity: 8,
+  rayleigh: 2.2,
+  mieCoefficient: 0.004,
+  mieDirectionalG: 0.85,
+  elevation: 1.2,
+  ambientIntensity: 0.42,
+  ambientColor: 0xfff6e8,
+  sunIntensity: 1.35,
+  sunColor: 0xfff2d6,
+  waterSunColor: 0xffffff,
+  waterColor: 0x001e0f,
+  rectMin: 1.4,
+  rectMax: 2.2,
+  rectColor: 0xffa366,
+  bloomStrength: 0.22,
+  bloomThreshold: 0.88,
+  exposure: 1.05,
+  useEnvironment: true,
+  moonOpacity: 0,
+};
+
+const NIGHT_LIGHTING = {
+  // Dark sky, bright celestial disk still visible (moon stand-in)
+  turbidity: 0,
+  rayleigh: 0.02,
+  mieCoefficient: 0.005,
+  mieDirectionalG: 0.95,
+  elevation: 1.2, // keep disk in sky — do not sink below horizon
+  // Hard, local gallery light only (frames/marble); art is unlit so stays daylight
+  ambientIntensity: 0.04,
+  ambientColor: 0x0a1020,
+  sunIntensity: 0.02,
+  sunColor: 0xc8d4ef,
+  waterSunColor: 0x8899aa,
+  waterColor: 0x00060c,
+  rectMin: 1.8,
+  rectMax: 2.8,
+  rectColor: 0xffb070,
+  bloomStrength: 0.28,
+  bloomThreshold: 0.82, // bloom lights, not soft art glow
+  exposure: 1.0,
+  useEnvironment: false, // IBL soft-fill only affects lit materials (frames)
+  moonOpacity: 1,
 };
 
 // V1: Post-processing
@@ -119,6 +176,14 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("beforeunload", () => {
   if (scene) {
     scene.traverse((obj) => disposeObject(obj));
+  }
+  if (scene?.environment) {
+    scene.environment.dispose();
+    scene.environment = null;
+  }
+  dayEnvironmentMap = null;
+  if (pmremGenerator) {
+    pmremGenerator.dispose();
   }
   if (renderer) {
     renderer.dispose();
@@ -433,6 +498,7 @@ async function init() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = DAY_LIGHTING.exposure;
   if ("outputColorSpace" in renderer) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
   }
@@ -441,6 +507,21 @@ async function init() {
   mouse = new THREE.Vector2();
 
   scene = new THREE.Scene();
+
+  // Base fill light — intensity/color driven by day/night presets
+  ambientLight = new THREE.AmbientLight(
+    DAY_LIGHTING.ambientColor,
+    DAY_LIGHTING.ambientIntensity
+  );
+  scene.add(ambientLight);
+
+  // Key light follows the sun / moon direction
+  sunLight = new THREE.DirectionalLight(
+    DAY_LIGHTING.sunColor,
+    DAY_LIGHTING.sunIntensity
+  );
+  sunLight.position.set(100, 200, -100);
+  scene.add(sunLight);
 
   camera = new THREE.PerspectiveCamera(
     55,
@@ -451,6 +532,7 @@ async function init() {
   camera.position.set(300, 300, 690);
 
   sun = new THREE.Vector3();
+  rectLights = [];
 
   // Parallel-load all textures (was sequential — major load-time win)
   if (loadingText) loadingText.textContent = "Loading artwork...";
@@ -481,8 +563,8 @@ async function init() {
     textureHeight: 512,
     waterNormals: waterNormals,
     sunDirection: new THREE.Vector3(),
-    sunColor: 0xffffff,
-    waterColor: 0x001e0f,
+    sunColor: DAY_LIGHTING.waterSunColor,
+    waterColor: DAY_LIGHTING.waterColor,
     distortionScale: 3.7,
     fog: scene.fog !== undefined,
   });
@@ -546,22 +628,32 @@ async function init() {
     );
     rectLight.lookAt(new THREE.Vector3(0, canvasYPosition, 0));
     scene.add(rectLight);
+    rectLights.push(rectLight);
 
-    createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
+    createPulseAnimation(
+      rectLight,
+      DAY_LIGHTING.rectMin,
+      DAY_LIGHTING.rectMax,
+      3.0
+    );
 
     const texture = imageTextures[i];
     const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
-    const canvasMaterial = new THREE.MeshStandardMaterial({
+    // Unlit artwork: each painting keeps full daylight color regardless of
+    // scene day/night lighting (ambient, sun, IBL never tint the photos).
+    const canvasMaterial = new THREE.MeshBasicMaterial({
       map: texture,
       side: THREE.FrontSide,
+      toneMapped: false,
     });
     const canvas = new THREE.Mesh(canvasGeometry, canvasMaterial);
     canvas.rotation.x = Math.PI / 2;
     canvas.rotation.z = angle - Math.PI / 2;
+    // Nudge slightly outward so the unlit image sits cleanly in front of the frame
     const position = new THREE.Vector3(
-      circleRadius * Math.cos(angle),
+      (circleRadius + 0.15) * Math.cos(angle),
       canvasYPosition,
-      circleRadius * Math.sin(angle)
+      (circleRadius + 0.15) * Math.sin(angle)
     );
     canvas.position.copy(position);
     canvasPositions.push(position);
@@ -571,43 +663,44 @@ async function init() {
 
   setProgress(96);
 
-  const sky = new Sky();
-  sky.scale.setScalar(10000);
-  scene.add(sky);
+  skyMesh = new Sky();
+  skyMesh.scale.setScalar(10000);
+  scene.add(skyMesh);
 
-  skyUniforms = sky.material.uniforms;
+  skyUniforms = skyMesh.material.uniforms;
+  skyUniforms["turbidity"].value = DAY_LIGHTING.turbidity;
+  skyUniforms["rayleigh"].value = DAY_LIGHTING.rayleigh;
+  skyUniforms["mieCoefficient"].value = DAY_LIGHTING.mieCoefficient;
+  skyUniforms["mieDirectionalG"].value = DAY_LIGHTING.mieDirectionalG;
 
-  skyUniforms["turbidity"].value = 10;
-  skyUniforms["rayleigh"].value = 2;
-  skyUniforms["mieCoefficient"].value = 0.005;
-  skyUniforms["mieDirectionalG"].value = 0.8;
+  // Keep PMREM alive so day can use sky IBL; night clears it to protect art
+  pmremGenerator = new THREE.PMREMGenerator(renderer);
+  updateSunLighting(true);
 
-  const parameters = { elevation: 0.69, azimuth: -150 };
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-
-  function updateSun() {
-    const phi = THREE.MathUtils.degToRad(90 - parameters.elevation);
-    const theta = THREE.MathUtils.degToRad(parameters.azimuth);
-    sun.setFromSphericalCoords(1, phi, theta);
-    sky.material.uniforms["sunPosition"].value.copy(sun);
-    water.material.uniforms["sunDirection"].value.copy(sun).normalize();
-    scene.environment = pmremGenerator.fromScene(sky).texture;
-  }
-
-  updateSun();
-
-  // P4: Dispose pmremGenerator after use
-  pmremGenerator.dispose();
-
-  const sunGeometry = new THREE.SphereGeometry(1000, 32, 32);
+  // Invisible wide hit target for sun/moon click (toggle day/night)
+  const sunGeometry = new THREE.SphereGeometry(1200, 32, 32);
   const sunMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
     opacity: 0,
+    depthWrite: false,
   });
   sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
-  sunMesh.position.set(-31200, 1000, -54000);
   scene.add(sunMesh);
+
+  // Visible moon disc at night (sky shader disk alone is easy to lose)
+  const moonGeometry = new THREE.SphereGeometry(420, 32, 32);
+  const moonMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe8eef8,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+  moonMesh.renderOrder = 1;
+  scene.add(moonMesh);
+  updateSunLighting(false);
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
@@ -1023,7 +1116,8 @@ function onCanvasClick(event) {
     moveToCanvas(canvasIndex);
   }
 
-  const sunIntersects = raycaster.intersectObject(sunMesh);
+  const celestial = [sunMesh, moonMesh].filter(Boolean);
+  const sunIntersects = raycaster.intersectObjects(celestial);
   if (sunIntersects.length > 0) {
     selectSound.play();
     toggleNightMode();
@@ -1100,9 +1194,59 @@ function createArtworkText() {
     }
   );
 
-  // Ensure there's enough light in the scene
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
+}
+
+/** Sync sun/moon direction, key light, water, and optional env map from sky elevation. */
+function updateSunLighting(refreshEnvironment = false) {
+  if (!sun || !skyUniforms) return;
+
+  const phi = THREE.MathUtils.degToRad(90 - skyParameters.elevation);
+  const theta = THREE.MathUtils.degToRad(skyParameters.azimuth);
+  sun.setFromSphericalCoords(1, phi, theta);
+
+  skyUniforms["sunPosition"].value.copy(sun);
+
+  if (water?.material?.uniforms?.sunDirection) {
+    water.material.uniforms["sunDirection"].value.copy(sun).normalize();
+  }
+
+  if (sunLight) {
+    sunLight.position.copy(sun).multiplyScalar(10000);
+  }
+
+  // Click proxy + visible moon sit on the celestial direction
+  const celestialPos = sun.clone().multiplyScalar(48000);
+  if (sunMesh) {
+    sunMesh.position.copy(celestialPos);
+  }
+  if (moonMesh) {
+    // Slightly closer so the disc reads larger against the sky dome
+    moonMesh.position.copy(sun).multiplyScalar(42000);
+  }
+
+  if (refreshEnvironment && pmremGenerator && skyMesh) {
+    // Only bake day IBL — night uses null env so soft fill doesn't wash art
+    if (isNightMode) {
+      if (scene.environment && scene.environment !== dayEnvironmentMap) {
+        scene.environment.dispose();
+      }
+      scene.environment = null;
+    } else {
+      const envMap = pmremGenerator.fromScene(skyMesh).texture;
+      if (dayEnvironmentMap && dayEnvironmentMap !== envMap) {
+        dayEnvironmentMap.dispose();
+      }
+      dayEnvironmentMap = envMap;
+      scene.environment = dayEnvironmentMap;
+    }
+  }
+}
+
+function setGalleryLightPulse(minIntensity, maxIntensity) {
+  rectLights.forEach((light) => {
+    gsap.killTweensOf(light);
+    createPulseAnimation(light, minIntensity, maxIntensity, 3.2);
+  });
 }
 
 function onCanvasHover(event) {
@@ -1124,40 +1268,46 @@ function onCanvasHover(event) {
   mouse.y = -(event.clientY / currentHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  const intersects = raycaster.intersectObjects(canvases.concat(sunMesh));
+  const celestialTargets = [sunMesh, moonMesh].filter(Boolean);
+  const intersects = raycaster.intersectObjects(
+    canvases.concat(celestialTargets)
+  );
 
   if (
     intersects.length > 0 &&
     (canvases.includes(intersects[0].object) ||
-      intersects[0].object === sunMesh)
+      celestialTargets.includes(intersects[0].object))
   ) {
     renderer.domElement.style.cursor = "pointer";
 
-    // I3: Hover visual feedback
+    // I3: Hover — slight brighten via color multiply (BasicMaterial has no emissive)
     const hitObj = intersects[0].object;
     if (canvases.includes(hitObj) && hitObj !== hoveredCanvas) {
-      // Unhover previous
-      if (hoveredCanvas) {
-        gsap.to(hoveredCanvas.material, {
-          emissiveIntensity: 0,
-          duration: 0.3,
+      if (hoveredCanvas?.material?.color) {
+        gsap.to(hoveredCanvas.material.color, {
+          r: 1,
+          g: 1,
+          b: 1,
+          duration: 0.25,
         });
       }
       hoveredCanvas = hitObj;
-      hoveredCanvas.material.emissive = new THREE.Color(0x222222);
-      gsap.to(hoveredCanvas.material, {
-        emissiveIntensity: 0.3,
-        duration: 0.3,
+      gsap.to(hoveredCanvas.material.color, {
+        r: 1.08,
+        g: 1.08,
+        b: 1.08,
+        duration: 0.25,
       });
     }
   } else {
     renderer.domElement.style.cursor = "default";
 
-    // I3: Unhover
-    if (hoveredCanvas) {
-      gsap.to(hoveredCanvas.material, {
-        emissiveIntensity: 0,
-        duration: 0.3,
+    if (hoveredCanvas?.material?.color) {
+      gsap.to(hoveredCanvas.material.color, {
+        r: 1,
+        g: 1,
+        b: 1,
+        duration: 0.25,
       });
       hoveredCanvas = null;
     }
@@ -1165,28 +1315,166 @@ function onCanvasHover(event) {
 }
 
 function toggleNightMode() {
-  if (isNightMode) {
-    // Transition to day mode
-    gsap.to(skyUniforms["turbidity"], { value: 10, duration: 3.69 });
-    gsap.to(skyUniforms["rayleigh"], { value: 2, duration: 3.69 });
-    gsap.to(skyUniforms["mieCoefficient"], { value: 0.005, duration: 3.69 });
-    gsap.to(skyUniforms["mieDirectionalG"], { value: 0.8, duration: 3.69 });
-    // V4: Reduce bloom back to default
-    if (bloomPass) {
-      gsap.to(bloomPass, { strength: 0.3, duration: 3.69 });
-    }
-  } else {
-    // Transition to night mode
-    gsap.to(skyUniforms["turbidity"], { value: 0, duration: 3.69 });
-    gsap.to(skyUniforms["rayleigh"], { value: 0.01, duration: 3.69 });
-    gsap.to(skyUniforms["mieCoefficient"], { value: 1.01, duration: 3.69 });
-    gsap.to(skyUniforms["mieDirectionalG"], { value: -1.01, duration: 3.69 });
-    // V4: Enhance bloom glow during night
-    if (bloomPass) {
-      gsap.to(bloomPass, { strength: 0.5, duration: 3.69 });
-    }
+  if (!skyUniforms || isNightTransitioning) return;
+
+  const goingNight = !isNightMode;
+  const to = goingNight ? NIGHT_LIGHTING : DAY_LIGHTING;
+  const duration = 3.8;
+  const ease = "power2.inOut";
+
+  isNightTransitioning = true;
+  isNightMode = goingNight;
+
+  // Kill any in-flight lighting tweens so rapid toggles stay smooth
+  gsap.killTweensOf(skyUniforms["turbidity"]);
+  gsap.killTweensOf(skyUniforms["rayleigh"]);
+  gsap.killTweensOf(skyUniforms["mieCoefficient"]);
+  gsap.killTweensOf(skyUniforms["mieDirectionalG"]);
+  gsap.killTweensOf(skyParameters);
+  gsap.killTweensOf(ambientLight);
+  gsap.killTweensOf(sunLight);
+  gsap.killTweensOf(renderer);
+  if (bloomPass) gsap.killTweensOf(bloomPass);
+  if (moonMesh?.material) gsap.killTweensOf(moonMesh.material);
+
+  // Color proxies for GSAP
+  const ambientCol = ambientLight.color.clone();
+  const sunCol = sunLight.color.clone();
+  const targetAmbient = new THREE.Color(to.ambientColor);
+  const targetSun = new THREE.Color(to.sunColor);
+  const waterSunFrom = water.material.uniforms["sunColor"].value.clone();
+  const waterSunTo = new THREE.Color(to.waterSunColor);
+  const waterColFrom = water.material.uniforms["waterColor"].value.clone();
+  const waterColTo = new THREE.Color(to.waterColor);
+  const rectColTo = new THREE.Color(to.rectColor);
+
+  // Sky atmosphere (dark night sky; sun disk stays as celestial body)
+  gsap.to(skyUniforms["turbidity"], { value: to.turbidity, duration, ease });
+  gsap.to(skyUniforms["rayleigh"], { value: to.rayleigh, duration, ease });
+  gsap.to(skyUniforms["mieCoefficient"], {
+    value: to.mieCoefficient,
+    duration,
+    ease,
+  });
+  gsap.to(skyUniforms["mieDirectionalG"], {
+    value: to.mieDirectionalG,
+    duration,
+    ease,
+  });
+
+  // Keep elevation above horizon so the sun/moon disk never disappears
+  gsap.to(skyParameters, {
+    elevation: to.elevation,
+    duration,
+    ease,
+    onUpdate: () => {
+      updateSunLighting(false);
+    },
+  });
+
+  // Minimal ambient at night — photos stay color-true under rect lights
+  gsap.to(ambientLight, { intensity: to.ambientIntensity, duration, ease });
+  gsap.to(ambientCol, {
+    r: targetAmbient.r,
+    g: targetAmbient.g,
+    b: targetAmbient.b,
+    duration,
+    ease,
+    onUpdate: () => ambientLight.color.copy(ambientCol),
+  });
+
+  // Near-off directional at night so it doesn't softly recolor the art
+  gsap.to(sunLight, { intensity: to.sunIntensity, duration, ease });
+  gsap.to(sunCol, {
+    r: targetSun.r,
+    g: targetSun.g,
+    b: targetSun.b,
+    duration,
+    ease,
+    onUpdate: () => sunLight.color.copy(sunCol),
+  });
+
+  // Water palette
+  gsap.to(waterSunFrom, {
+    r: waterSunTo.r,
+    g: waterSunTo.g,
+    b: waterSunTo.b,
+    duration,
+    ease,
+    onUpdate: () => {
+      water.material.uniforms["sunColor"].value.copy(waterSunFrom);
+    },
+  });
+  gsap.to(waterColFrom, {
+    r: waterColTo.r,
+    g: waterColTo.g,
+    b: waterColTo.b,
+    duration,
+    ease,
+    onUpdate: () => {
+      water.material.uniforms["waterColor"].value.copy(waterColFrom);
+    },
+  });
+
+  // Gallery frame lights only — hard local light, no soft fill on paintings
+  rectLights.forEach((light) => {
+    gsap.to(light.color, {
+      r: rectColTo.r,
+      g: rectColTo.g,
+      b: rectColTo.b,
+      duration,
+      ease,
+    });
+  });
+  gsap.delayedCall(duration * 0.3, () => {
+    setGalleryLightPulse(to.rectMin, to.rectMax);
+  });
+
+  // Artworks are unlit (MeshBasicMaterial) — no day/night material tweaks needed
+
+  // Visible moon disc (sky disk + explicit mesh so it always reads)
+  if (moonMesh?.material) {
+    gsap.to(moonMesh.material, {
+      opacity: to.moonOpacity,
+      duration: duration * 0.85,
+      ease,
+    });
   }
-  isNightMode = !isNightMode;
+
+  gsap.to(renderer, {
+    toneMappingExposure: to.exposure,
+    duration,
+    ease,
+  });
+  if (bloomPass) {
+    gsap.to(bloomPass, {
+      strength: to.bloomStrength,
+      threshold: to.bloomThreshold,
+      duration,
+      ease,
+    });
+  }
+
+  // Night: drop soft IBL immediately so paintings stay crisp
+  // Day: rebuild sky environment a few times as the sky brightens
+  if (goingNight) {
+    if (scene.environment && scene.environment !== dayEnvironmentMap) {
+      scene.environment.dispose();
+    }
+    scene.environment = null;
+    gsap.delayedCall(duration, () => {
+      updateSunLighting(false);
+      isNightTransitioning = false;
+    });
+  } else {
+    const envTimes = [0.25, 0.55, 1.0];
+    envTimes.forEach((t) => {
+      gsap.delayedCall(duration * t, () => {
+        updateSunLighting(true);
+        if (t === 1.0) isNightTransitioning = false;
+      });
+    });
+  }
 }
 
 // Add this function near the other helper functions
