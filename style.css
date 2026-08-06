@@ -43,44 +43,62 @@ canvas {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: black;
+  background: radial-gradient(ellipse at center, #0a0a0a 0%, #000 70%);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: opacity 2s ease;
+  transition: opacity 1.6s ease;
   z-index: 1000;
+}
+
+/* Brand + action stay in one column so titles never reflow when load ends */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 640px);
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.loading-brand {
+  text-align: center;
+  flex-shrink: 0;
+  /* Fixed block so subtitle margin doesn't interact with action reflow */
+  margin-bottom: 12px;
 }
 
 /* V2: Enhanced Loading Screen Titles */
 .loading-title {
   font-family: "Montserrat", sans-serif;
   font-weight: 100;
-  font-size: 72px;
+  font-size: clamp(36px, 8vw, 72px);
   color: white;
-  letter-spacing: 12px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   opacity: 0;
-  animation: fadeInUp 1.5s ease-out 0.5s forwards;
-  margin-bottom: 8px;
+  animation: fadeInUp 1.2s ease-out 0.25s forwards;
+  margin: 0 0 8px 0;
 }
 
 .loading-subtitle {
   font-family: "Montserrat", sans-serif;
   font-weight: 100;
-  font-size: 24px;
+  font-size: clamp(14px, 2.5vw, 24px);
   color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 8px;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   opacity: 0;
-  animation: fadeInUp 1.5s ease-out 1.2s forwards;
-  margin-bottom: 40px;
+  animation: fadeInUp 1.2s ease-out 0.55s forwards;
+  margin: 0;
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -88,24 +106,47 @@ canvas {
   }
 }
 
+/* Fixed-height zone: progress and Enter occupy the same space (crossfade) */
+.loading-action {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 #loading-container {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: opacity 1s ease-out;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.55s ease, visibility 0.55s ease;
+  pointer-events: none;
 }
 
 #loading-progress {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 160px;
+  height: 160px;
+}
+
+.progress-ring {
+  display: block;
+  width: 160px;
+  height: 160px;
 }
 
 .progress-ring__circle {
-  transition: 0.35s stroke-dashoffset;
+  transition: stroke-dashoffset 0.25s ease-out;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
+  stroke-linecap: round;
 }
 
 #progress-text {
@@ -113,34 +154,50 @@ canvas {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 36px;
+  font-size: 28px;
   color: white;
   font-family: "Montserrat", sans-serif;
+  font-weight: 100;
+  letter-spacing: 0.06em;
+  tabular-nums: true;
+  font-variant-numeric: tabular-nums;
 }
 
 #loading-text {
-  margin-top: 20px;
-  font-size: 24px;
-  color: white;
+  margin-top: 16px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.65);
   font-family: "Montserrat", sans-serif;
+  font-weight: 100;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  min-height: 1.2em;
 }
 
-/* Start Button Styles */
+/* Start Button — always in the action zone; never toggles display (prevents title jump) */
 #loading-screen #start-button {
-  position: relative;
+  position: absolute;
   overflow: hidden;
-  background-color: black;
+  background-color: transparent;
   color: white;
   border: 2px solid transparent;
-  padding: 10px 20px;
-  font-size: 69px;
+  padding: 14px 28px;
+  font-size: clamp(28px, 5vw, 42px);
   cursor: pointer;
   border-radius: 5px;
   font-family: "Montserrat", sans-serif;
-  transition: background-color 0.3s ease, opacity 1s ease-in;
+  font-weight: 100;
+  letter-spacing: 0.08em;
   opacity: 0;
-  margin-top: 20px;
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
+  margin: 0;
+  transition:
+    opacity 0.65s ease 0.12s,
+    visibility 0.65s ease 0.12s,
+    background-color 0.3s ease,
+    transform 0.35s ease;
+  transform: translateY(8px);
 }
 
 #loading-screen #start-button span {
@@ -165,7 +222,7 @@ canvas {
 #loading-screen #start-button::after {
   left: 0;
   right: 0;
-  height: 3px;
+  height: 2px;
   transform: scaleX(0);
   transform-origin: left;
 }
@@ -183,7 +240,7 @@ canvas {
 #loading-screen #start-button span::after {
   top: 0;
   bottom: 0;
-  width: 3px;
+  width: 2px;
   transform: scaleY(0);
 }
 
@@ -206,7 +263,22 @@ canvas {
   transform: scaleY(1);
 }
 
-#loading-screen #start-button.visible {
+/* Ready state: crossfade progress → Enter without moving titles */
+#loading-screen.is-ready #loading-container {
+  opacity: 0;
+  visibility: hidden;
+}
+
+#loading-screen.is-ready #start-button {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+#loading-screen.is-ready #control-panel,
+#loading-screen.is-ready #keyboard-controls-header,
+#loading-screen.is-ready .control-button {
   opacity: 1;
 }
 
@@ -297,12 +369,7 @@ canvas {
   pointer-events: none;
 }
 
-/* Transition Styles */
-#loading-progress,
-#progress-text,
-#loading-text {
-  transition: opacity 1s ease-out;
-}
+
 
 /* Orientation Message Styles */
 #orientation-message {
@@ -320,74 +387,6 @@ canvas {
   font-family: "Montserrat", sans-serif;
   font-size: 24px;
   z-index: 2000;
-}
-
-/* I4: Auto-Tour Toggle Button */
-#autotour-toggle {
-  position: absolute;
-  bottom: 15px;
-  right: 140px;
-  padding: 5px 10px;
-  border: 1px solid #fff;
-  border-radius: 5px;
-  background-color: rgba(255, 255, 255, 0);
-  color: #fff;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  font-family: "Montserrat", sans-serif;
-  display: none; /* shown after entering the gallery */
-  z-index: 10;
-}
-
-#autotour-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-/* I1: Artwork Info Panel */
-#artwork-info-panel {
-  position: fixed;
-  bottom: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 16px 32px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  color: white;
-  font-family: "Montserrat", sans-serif;
-  text-align: center;
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.5s ease;
-}
-
-#artwork-info-panel.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#artwork-info-panel .info-title {
-  font-size: 20px;
-  font-weight: 100;
-  letter-spacing: 3px;
-  margin-bottom: 4px;
-}
-
-#artwork-info-panel .info-artist {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 2px;
-  min-height: 18px;
-}
-
-#artwork-info-panel .info-index {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 6px;
-  letter-spacing: 2px;
 }
 
 /* V4: Night Mode Discovery Hint */
@@ -450,18 +449,5 @@ canvas {
   .loading-subtitle {
     font-size: 16px;
     letter-spacing: 4px;
-  }
-
-  #artwork-info-panel {
-    bottom: 50px;
-    padding: 12px 20px;
-  }
-
-  #artwork-info-panel .info-title {
-    font-size: 16px;
-  }
-
-  #autotour-toggle {
-    right: 120px;
   }
 }

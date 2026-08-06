@@ -16,41 +16,56 @@
       </p>
     </div>
     <div id="loading-screen">
-      <h1 class="loading-title">Infinite Ocean</h1>
-      <h2 class="loading-subtitle">3D Art Gallery</h2>
-      <div id="loading-container">
-        <div id="loading-progress">
-          <svg class="progress-ring" width="200" height="200">
-            <circle
-              class="progress-ring__circle"
-              stroke="white"
-              stroke-width="4"
-              fill="transparent"
-              r="90"
-              cx="100"
-              cy="100" />
-          </svg>
-          <div id="progress-text">0%</div>
+      <div class="loading-content">
+        <div class="loading-brand">
+          <h1 class="loading-title">Infinite Ocean</h1>
+          <h2 class="loading-subtitle">3D Art Gallery</h2>
         </div>
-        <div id="loading-text">Loading...</div>
+        <!-- Fixed-height action zone: progress and Enter crossfade in place (no title jump) -->
+        <div class="loading-action">
+          <div id="loading-container">
+            <div id="loading-progress">
+              <svg class="progress-ring" width="160" height="160" viewBox="0 0 200 200">
+                <circle
+                  class="progress-ring__track"
+                  stroke="rgba(255,255,255,0.12)"
+                  stroke-width="3"
+                  fill="transparent"
+                  r="90"
+                  cx="100"
+                  cy="100" />
+                <circle
+                  class="progress-ring__circle"
+                  stroke="white"
+                  stroke-width="3"
+                  fill="transparent"
+                  r="90"
+                  cx="100"
+                  cy="100" />
+              </svg>
+              <div id="progress-text">0%</div>
+            </div>
+            <div id="loading-text">Loading gallery...</div>
+          </div>
+          <button id="start-button" type="button" aria-label="Enter Art Gallery">
+            <span></span>
+            Enter Art Gallery
+          </button>
+        </div>
       </div>
-      <button id="start-button">
-        <span></span>
-        Enter Art Gallery
-      </button>
-      <audio id="background-music" src="/zenPiano.mp3" preload="auto" type="audio/mpeg"></audio>
+      <audio id="background-music" src="/zenPiano.mp3" preload="metadata" type="audio/mpeg"></audio>
       <div id="controls-container">
         <h3 id="keyboard-controls-header">Keyboard Controls</h3>
         <div id="control-panel">
-          <button id="move-left" class="control-button">
+          <button id="move-left" class="control-button" type="button" tabindex="-1">
             <span></span>
             &#8592; = Move Left
           </button>
-          <button id="toggle-sound" class="control-button">
+          <button id="toggle-sound" class="control-button" type="button" tabindex="-1">
             <span></span>
             m = Toggle Sound
           </button>
-          <button id="move-right" class="control-button">
+          <button id="move-right" class="control-button" type="button" tabindex="-1">
             <span></span>
             &#8594; = Move Right
           </button>
@@ -60,14 +75,6 @@
     <div id="scene-container"></div>
     <div id="app"></div>
     <button id="volume-toggle">Toggle Sound</button>
-    <button id="autotour-toggle">Auto Tour</button>
-
-    <!-- I1: Artwork Info Panel -->
-    <div id="artwork-info-panel">
-      <div class="info-title"></div>
-      <div class="info-artist"></div>
-      <div class="info-index"></div>
-    </div>
 
     <!-- V4: Night Mode Discovery Hint -->
     <div id="night-mode-hint">Click the horizon to toggle night mode</div>

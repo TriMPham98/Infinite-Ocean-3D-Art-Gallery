@@ -9,7 +9,6 @@ import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLigh
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { gsap } from "gsap";
 
@@ -67,15 +66,8 @@ let isTabVisible = true;
 let lastHoverTime = 0;
 const HOVER_THROTTLE_MS = 50;
 
-// I1: Artwork info panel
-let infoPanel;
-
 // I3: Hover feedback
 let hoveredCanvas = null;
-
-// I4: Auto-tour
-let autoTourInterval = null;
-let isAutoTourActive = false;
 
 // I5: Detail view / zoom
 let isDetailView = false;
@@ -94,9 +86,6 @@ const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
 const selectSound = new Audio(assetUrl("modernSelect.wav"));
 const orientationMessage = document.getElementById("orientation-message");
-
-// I1: Artwork Info Panel DOM
-infoPanel = document.getElementById("artwork-info-panel");
 
 // I5: Detail overlay DOM
 detailOverlay = document.getElementById("detail-overlay");
@@ -237,18 +226,33 @@ backgroundMusic.loop = true;
 progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
 progressRing.style.strokeDashoffset = circumference;
 
-// I4: Auto-tour toggle button
-const autoTourBtn = document.getElementById("autotour-toggle");
-
 // Event Listeners
 if (startButton) startButton.addEventListener("click", onStartButtonClick);
 if (volumeToggleBtn) volumeToggleBtn.addEventListener("click", toggleMusic);
-if (autoTourBtn) autoTourBtn.addEventListener("click", toggleAutoTour);
 window.addEventListener("keydown", handleKeyPress);
 window.addEventListener("resize", onWindowResize, false);
 
+// Crossfade loading ring → Enter button without layout shift
+function revealEnterUI() {
+  if (assetsLoaded) return;
+
+  const loadingText = document.getElementById("loading-text");
+  if (loadingText) loadingText.textContent = "Ready";
+  setProgress(100);
+
+  if (loadingScreen) {
+    loadingScreen.classList.add("is-ready");
+  }
+
+  // Match CSS transition; unlock interaction after crossfade begins
+  window.setTimeout(() => {
+    assetsLoaded = true;
+    checkOrientation();
+  }, 400);
+}
+
 // Wait for audio readiness without blocking forever (common host/mobile hang)
-function waitForAudio(audioElement, timeoutMs = 8000) {
+function waitForAudio(audioElement, timeoutMs = 3000) {
   return new Promise((resolve) => {
     if (!audioElement) {
       resolve(false);
@@ -305,10 +309,6 @@ function checkOrientation() {
     if (volumeToggleBtn) {
       volumeToggleBtn.style.display = show && hasEnteredGallery ? "block" : "none";
     }
-    const autoTour = document.getElementById("autotour-toggle");
-    if (autoTour) {
-      autoTour.style.display = show && hasEnteredGallery ? "block" : "none";
-    }
   };
 
   if (isMobile && !isLandscape) {
@@ -360,60 +360,19 @@ function handleOrientationChange() {
 // Main Functions
 async function init() {
   const manager = new THREE.LoadingManager();
-  let imagesLoaded = 0;
+  const loadingText = document.getElementById("loading-text");
 
-  manager.onProgress = function (url, itemsLoaded, itemsTotal) {
-    const progress = (itemsLoaded / itemsTotal) * 100;
+  // Reserve ~90% of the bar for network loads; rest for scene setup
+  manager.onProgress = function (_url, itemsLoaded, itemsTotal) {
+    if (!itemsTotal) return;
+    const progress = (itemsLoaded / itemsTotal) * 90;
     setProgress(progress);
   };
 
-  let onLoadExecuted = false;
-
-  manager.onLoad = function () {
-    if (onLoadExecuted) return;
-    onLoadExecuted = true;
-
-    const loadingContainer = document.getElementById("loading-container");
-    const startButton = document.getElementById("start-button");
-    const controlPanel = document.getElementById("control-panel");
-    const controlButtons = document.querySelectorAll(".control-button");
-    const keyboardControlsHeader = document.getElementById(
-      "keyboard-controls-header"
-    );
-    const loadingText = document.getElementById("loading-text");
-
-    loadingText.textContent = "Loading Complete";
-
-    setTimeout(() => {
-      loadingContainer.style.opacity = "0";
-
-      setTimeout(() => {
-        loadingContainer.style.display = "none";
-        startButton.style.display = "block";
-        startButton.offsetHeight;
-        startButton.classList.add("visible");
-
-        setTimeout(() => {
-          controlPanel.style.opacity = "1";
-          keyboardControlsHeader.style.opacity = "1";
-          controlButtons.forEach((button) => {
-            button.style.opacity = "1";
-          });
-
-          assetsLoaded = true;
-          checkOrientation(); // Check orientation after assets are loaded
-        }, 100);
-      }, 1690);
-    }, 1500);
-  };
-
-  manager.onError = function (url) {
-    // Display error message to user
-    const loadingText = document.getElementById("loading-text");
+  manager.onError = function () {
     if (loadingText) {
-      loadingText.textContent =
-        "Error loading assets. Please refresh the page.";
-      loadingText.style.color = "red";
+      loadingText.textContent = "Error loading assets. Please refresh.";
+      loadingText.style.color = "#ff6b6b";
     }
   };
 
@@ -424,13 +383,9 @@ async function init() {
     return new Promise((resolve, reject) => {
       loader.load(
         primary,
-        function (texture) {
-          imagesLoaded++;
-          resolve(texture);
-        },
+        (texture) => resolve(texture),
         undefined,
-        function () {
-          // Fallback: try the raw path (covers absolute vs relative hosting quirks)
+        () => {
           const fallback = url.startsWith("/") ? url.slice(1) : `/${url}`;
           if (fallback === primary) {
             reject(new Error(`Failed to load texture: ${primary}`));
@@ -438,18 +393,32 @@ async function init() {
           }
           loader.load(
             fallback,
-            function (texture) {
-              imagesLoaded++;
-              resolve(texture);
-            },
+            (texture) => resolve(texture),
             undefined,
-            function (fallbackErr) {
-              reject(fallbackErr || new Error(`Failed to load texture: ${primary}`));
-            }
+            (fallbackErr) =>
+              reject(
+                fallbackErr || new Error(`Failed to load texture: ${primary}`)
+              )
           );
         }
       );
     });
+  }
+
+  function prepareTexture(texture, { srgb = false, wrap = false } = {}) {
+    if (srgb && "colorSpace" in texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+    } else if (srgb && "encoding" in texture) {
+      // three r150 and earlier
+      texture.encoding = THREE.sRGBEncoding;
+    }
+    if (wrap) {
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    }
+    texture.generateMipmaps = true;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    return texture;
   }
 
   // P2: Initialize RectAreaLight uniforms before creating lights
@@ -464,6 +433,9 @@ async function init() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  if ("outputColorSpace" in renderer) {
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  }
   sceneContainer.appendChild(renderer.domElement);
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
@@ -480,9 +452,29 @@ async function init() {
 
   sun = new THREE.Vector3();
 
+  // Parallel-load all textures (was sequential — major load-time win)
+  if (loadingText) loadingText.textContent = "Loading artwork...";
+  const textureUrls = [
+    "waternormals.jpg",
+    "whiteMarble.jpg",
+    ...Array.from({ length: numberOfCanvases }, (_, i) => `image${i}.jpg`),
+  ];
+  const loadedTextures = await Promise.all(textureUrls.map((u) => loadTexture(u)));
+
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const waterNormals = prepareTexture(loadedTextures[0], { wrap: true });
+  const marbleTexture = prepareTexture(loadedTextures[1], { srgb: true });
+  marbleTexture.anisotropy = Math.min(4, maxAniso);
+  const imageTextures = loadedTextures.slice(2).map((tex) => {
+    prepareTexture(tex, { srgb: true });
+    tex.anisotropy = Math.min(4, maxAniso);
+    return tex;
+  });
+
+  setProgress(92);
+  if (loadingText) loadingText.textContent = "Building scene...";
+
   const waterGeometry = new THREE.PlaneGeometry(50000, 50000);
-  const waterNormals = await loadTexture("waternormals.jpg");
-  waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
 
   water = new Water(waterGeometry, {
     textureWidth: 512,
@@ -499,7 +491,6 @@ async function init() {
   scene.add(water);
 
   const circleRadius = 90;
-  const marbleTexture = await loadTexture("whiteMarble.jpg");
   const frameDepth = 1.0;
   const frameOffset = 1.5;
   const frameRadius = circleRadius - 0.51;
@@ -510,6 +501,11 @@ async function init() {
   const lightWidthOdd = 30.5;
   const lightHeightOdd = 20.5;
   const lightColor = 0xffa366;
+
+  // Shared frame material — one marble texture upload for all frames
+  const frameMaterial = new THREE.MeshStandardMaterial({
+    map: marbleTexture,
+  });
 
   for (let i = 0; i < numberOfCanvases; i++) {
     const angle = (i / numberOfCanvases) * Math.PI * 2;
@@ -527,9 +523,6 @@ async function init() {
       frameDepth,
       frameHeight
     );
-    const frameMaterial = new THREE.MeshStandardMaterial({
-      map: marbleTexture,
-    });
     const frame = new THREE.Mesh(frameGeometry, frameMaterial);
     frame.rotation.x = Math.PI / 2;
     frame.rotation.z = angle - Math.PI / 2;
@@ -556,7 +549,7 @@ async function init() {
 
     createPulseAnimation(rectLight, 1.5, 2.5, 3.0);
 
-    const texture = await loadTexture("image" + i + ".jpg");
+    const texture = imageTextures[i];
     const canvasGeometry = new THREE.BoxGeometry(canvasWidth, 0, canvasHeight);
     const canvasMaterial = new THREE.MeshStandardMaterial({
       map: texture,
@@ -575,6 +568,8 @@ async function init() {
     scene.add(canvas);
     canvases.push(canvas);
   }
+
+  setProgress(96);
 
   const sky = new Sky();
   sky.scale.setScalar(10000);
@@ -714,7 +709,6 @@ async function init() {
       const absDx = Math.abs(dx);
       const absDy = Math.abs(dy);
       if (absDx > 50 && elapsed < 500 && absDx > absDy) {
-        pauseAutoTour();
         if (dx < 0) {
           selectSound.play();
           moveToCanvas(currentCanvasIndex - 1);
@@ -727,7 +721,7 @@ async function init() {
     { passive: true }
   );
 
-  // V1: Post-processing pipeline (Bloom + Vignette)
+  // V1: Post-processing pipeline (Bloom)
   composer = new EffectComposer(renderer);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
@@ -740,46 +734,21 @@ async function init() {
   );
   composer.addPass(bloomPass);
 
-  // Vignette shader pass
-  const VignetteShader = {
-    uniforms: {
-      tDiffuse: { value: null },
-      offset: { value: 0.95 },
-      darkness: { value: 1.2 },
-    },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform float offset;
-      uniform float darkness;
-      uniform sampler2D tDiffuse;
-      varying vec2 vUv;
-      void main() {
-        vec4 texel = texture2D(tDiffuse, vUv);
-        vec2 uv = (vUv - vec2(0.5)) * vec2(offset);
-        gl_FragColor = vec4(mix(texel.rgb, vec3(1.0 - darkness), dot(uv, uv)), texel.a);
-      }
-    `,
-  };
-  const vignettePass = new ShaderPass(VignetteShader);
-  composer.addPass(vignettePass);
-
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
-  // Audio must not block gallery entry if the file is slow/unavailable
-  await waitForAudio(backgroundMusic, 8000);
-
+  // Warm the first frame while audio resolves (non-blocking max 3s)
+  if (loadingText) loadingText.textContent = "Almost ready...";
+  setProgress(98);
   renderer.render(scene, camera);
   createArtworkText();
 
+  await waitForAudio(backgroundMusic, 3000);
+
   // I5: Detail overlay click to exit
-  detailOverlay.addEventListener("click", exitDetailView);
+  if (detailOverlay) {
+    detailOverlay.addEventListener("click", exitDetailView);
+  }
 
   // I5: Escape key to exit detail view
   window.addEventListener("keydown", (e) => {
@@ -788,18 +757,13 @@ async function init() {
     }
   });
 
-  // I1: Hide info panel when user starts orbiting
-  controls.addEventListener("start", () => {
-    if (!isDetailView) {
-      hideInfoPanel();
-    }
-    pauseAutoTour();
-  });
-
   // Call checkOrientation on page load and whenever the orientation changes
   window.addEventListener("load", checkOrientation);
   window.addEventListener("orientationchange", handleOrientationChange);
   window.addEventListener("resize", handleOrientationChange);
+
+  // Smooth crossfade to Enter — titles stay put (fixed action zone)
+  revealEnterUI();
 }
 
 function animate() {
@@ -851,8 +815,6 @@ function onStartButtonClick() {
     sceneContainer.style.opacity = "1";
 
     if (volumeToggleBtn) volumeToggleBtn.style.display = "block";
-    const autoTour = document.getElementById("autotour-toggle");
-    if (autoTour) autoTour.style.display = "block";
 
     setTimeout(() => {
       loadingScreen.style.display = "none";
@@ -888,12 +850,10 @@ function handleKeyPress(event) {
       toggleMusic();
       break;
     case "ArrowRight":
-      pauseAutoTour();
       selectSound.play();
       moveToCanvas(currentCanvasIndex - 1);
       break;
     case "ArrowLeft":
-      pauseAutoTour();
       selectSound.play();
       moveToCanvas(currentCanvasIndex + 1);
       break;
@@ -919,80 +879,102 @@ function onWindowResize() {
   handleOrientationChange();
 }
 
-// V3: Cinematic camera entrance with GSAP timeline
+// V3: Single continuous intro spiral (no multi-phase stop/reverse)
+let introTween = null;
+
 function panToCenter() {
-  const tl = gsap.timeline();
+  if (!camera || !controls || !canvasPositions.length) return;
 
-  // Phase 1: Swoop down to orbit start position (2.5s)
-  const orbitRadius = 160;
-  tl.to(camera.position, {
-    x: orbitRadius,
-    y: 50,
-    z: 0,
-    duration: 2.5,
-    ease: "power2.inOut",
-    onUpdate: () => controls.update(),
-  });
-  tl.to(
-    controls.target,
-    {
-      x: 0,
-      y: 25,
-      z: 0,
-      duration: 2.5,
-      ease: "power2.inOut",
-    },
-    "<"
-  );
+  // Cancel any prior intro / camera tweens so nothing fights the path
+  if (introTween) introTween.kill();
+  gsap.killTweensOf(camera.position);
+  gsap.killTweensOf(controls.target);
 
-  // Phase 2: Orbit around gallery (3s)
-  const orbitTarget = { angle: 0 };
-  tl.to(orbitTarget, {
-    angle: Math.PI * 0.75,
-    duration: 3,
-    ease: "power1.inOut",
+  const startPos = camera.position.clone();
+  const startTarget = controls.target.clone();
+  const firstPos = canvasPositions[0];
+  const endPos = new THREE.Vector3(firstPos.x, firstPos.y - 2.3, firstPos.z);
+  const endTarget = new THREE.Vector3(0, 10, 0);
+
+  const startAngle = Math.atan2(startPos.z, startPos.x);
+  const endAngle = Math.atan2(endPos.z, endPos.x);
+  const startRadius = Math.hypot(startPos.x, startPos.z);
+  const endRadius = Math.hypot(endPos.x, endPos.z);
+  const startY = startPos.y;
+  const endY = endPos.y;
+
+  // One direction only: clockwise spiral that lands on the first artwork.
+  // Enough arc to feel scenic, never reverses or "changes its mind".
+  let angleSpan = startAngle - endAngle;
+  while (angleSpan < Math.PI * 1.15) angleSpan += Math.PI * 2;
+  while (angleSpan > Math.PI * 1.85) angleSpan -= Math.PI * 2;
+
+  // Smoothstep: C1 continuous (no corner at start/end)
+  const smoothstep = (t) => t * t * (3 - 2 * t);
+  // Gentler approach near the end so we ease into the painting
+  const smoothstep2 = (t) => smoothstep(smoothstep(t));
+
+  const state = { t: 0 };
+  const wasEnabled = controls.enabled;
+  controls.enabled = false;
+
+  introTween = gsap.to(state, {
+    t: 1,
+    duration: 7.5,
+    // Single ease for the whole path — no phase boundaries
+    ease: "none",
     onUpdate: () => {
-      camera.position.x = orbitRadius * Math.cos(orbitTarget.angle);
-      camera.position.z = orbitRadius * Math.sin(orbitTarget.angle);
-      camera.position.y = 50 + (orbitTarget.angle / (Math.PI * 0.75)) * -20;
+      const t = state.t;
+      // Spatial params use smoothsteps so velocity eases without multi-phase stops
+      const aT = smoothstep(t); // angle progresses smoothly
+      const rT = smoothstep2(t); // radius eases in more toward the end
+      const yT = smoothstep(t);
+
+      const angle = startAngle - angleSpan * aT;
+      const radius = startRadius + (endRadius - startRadius) * rT;
+      const y = startY + (endY - startY) * yT;
+
+      camera.position.set(
+        Math.cos(angle) * radius,
+        y,
+        Math.sin(angle) * radius
+      );
+
+      // Look target eases once toward gallery center — no mid-path retarget
+      const lookT = smoothstep(t);
+      controls.target.set(
+        startTarget.x + (endTarget.x - startTarget.x) * lookT,
+        startTarget.y + (endTarget.y - startTarget.y) * lookT,
+        startTarget.z + (endTarget.z - startTarget.z) * lookT
+      );
       controls.update();
     },
-  });
-
-  // Phase 3: Settle at first artwork (2s)
-  const firstPos = canvasPositions[0];
-  tl.to(camera.position, {
-    x: firstPos.x,
-    y: firstPos.y - 2.3,
-    z: firstPos.z,
-    duration: 2,
-    ease: "power2.inOut",
-    onUpdate: () => controls.update(),
     onComplete: () => {
-      showInfoPanel(0);
-      // V4: Start night mode hint timer
+      camera.position.copy(endPos);
+      controls.target.copy(endTarget);
+      controls.update();
+      controls.enabled = wasEnabled;
+      introTween = null;
+      currentCanvasIndex = 0;
       startNightModeHintTimer();
     },
   });
-  tl.to(
-    controls.target,
-    {
-      x: 0,
-      y: 10,
-      z: 0,
-      duration: 2,
-      ease: "power2.inOut",
-    },
-    "<"
-  );
 }
 
 function moveToCanvas(index) {
+  // Interrupt intro if user navigates early
+  if (introTween) {
+    introTween.kill();
+    introTween = null;
+    if (controls) controls.enabled = true;
+  }
+
   // I5: Exit detail view if active
   if (isDetailView) {
     exitDetailView();
   }
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
+  gsap.killTweensOf(camera.position);
   gsap.to(camera.position, {
     x: canvasPositions[currentCanvasIndex].x,
     y: canvasPositions[currentCanvasIndex].y - 2.3,
@@ -1001,10 +983,6 @@ function moveToCanvas(index) {
     ease: "power2.inOut",
     onUpdate: function () {
       controls.update();
-    },
-    onComplete: function () {
-      // I1: Show artwork info panel
-      showInfoPanel(currentCanvasIndex);
     },
   });
 }
@@ -1025,9 +1003,6 @@ function onCanvasClick(event) {
   if (isOrientationChanging) {
     return;
   }
-
-  // I4: Pause auto-tour on user click
-  pauseAutoTour();
 
   // Ensure we have current window dimensions
   const currentWidth = window.innerWidth;
@@ -1245,49 +1220,6 @@ function toggleFullscreen() {
   }
 }
 
-// I1: Artwork Info Panel functions
-function showInfoPanel(index) {
-  if (!infoPanel) return;
-  const info = artworkInfo[index];
-  const titleEl = infoPanel.querySelector(".info-title");
-  const artistEl = infoPanel.querySelector(".info-artist");
-  const indexEl = infoPanel.querySelector(".info-index");
-  if (titleEl) titleEl.textContent = info.title;
-  if (artistEl) artistEl.textContent = info.artist || "";
-  if (indexEl) indexEl.textContent = `${index + 1} / ${numberOfCanvases}`;
-  infoPanel.classList.add("visible");
-}
-
-function hideInfoPanel() {
-  if (!infoPanel) return;
-  infoPanel.classList.remove("visible");
-}
-
-// I4: Auto-Tour Mode
-function toggleAutoTour() {
-  const btn = document.getElementById("autotour-toggle");
-  if (isAutoTourActive) {
-    pauseAutoTour();
-  } else {
-    isAutoTourActive = true;
-    if (btn) btn.textContent = "Stop Tour";
-    autoTourInterval = setInterval(() => {
-      moveToCanvas(currentCanvasIndex + 1);
-    }, 6000);
-  }
-}
-
-function pauseAutoTour() {
-  if (!isAutoTourActive) return;
-  isAutoTourActive = false;
-  const btn = document.getElementById("autotour-toggle");
-  if (btn) btn.textContent = "Auto Tour";
-  if (autoTourInterval) {
-    clearInterval(autoTourInterval);
-    autoTourInterval = null;
-  }
-}
-
 // I5: Detail View / Zoom
 function onCanvasDoubleClick(event) {
   if (isOrientationChanging) return;
@@ -1326,7 +1258,6 @@ function onCanvasDoubleClick(event) {
 
     isDetailView = true;
     controls.enabled = false;
-    pauseAutoTour();
 
     // Show overlay
     if (detailOverlay) {
@@ -1398,17 +1329,10 @@ init().catch(() => {
   if (loadingText) {
     loadingText.textContent =
       "Failed to load the gallery. Please refresh the page.";
-    loadingText.style.color = "red";
+    loadingText.style.color = "#ff6b6b";
   }
-  // Surface Enter if some assets made it through so the UI is not stuck
+  // Still surface Enter so the UI is not stuck on a dead loading ring
   if (!assetsLoaded) {
-    assetsLoaded = true;
-    const startBtn = document.getElementById("start-button");
-    const loadingContainer = document.getElementById("loading-container");
-    if (loadingContainer) loadingContainer.style.display = "none";
-    if (startBtn) {
-      startBtn.style.display = "block";
-      startBtn.classList.add("visible");
-    }
+    revealEnterUI();
   }
 });
