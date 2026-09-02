@@ -3,8 +3,6 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
-import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -47,6 +45,7 @@ const numberOfCanvases = 14;
 let currentCanvasIndex = 0;
 let isNightMode = false;
 let isNightTransitioning = false;
+let nightHintShown = false;
 let skyUniforms;
 let skyMesh;
 let skyParameters = { elevation: 1.2, azimuth: -150 };
@@ -54,6 +53,7 @@ let pmremGenerator;
 let ambientLight;
 let sunLight;
 let moonMesh;
+let stars;
 let rectLights = [];
 let dayEnvironmentMap = null;
 let assetsLoaded = false;
@@ -89,6 +89,7 @@ const DAY_LIGHTING = {
   exposure: 1.05,
   useEnvironment: true,
   moonOpacity: 0,
+  starOpacity: 0,
 };
 
 const NIGHT_LIGHTING = {
@@ -113,6 +114,7 @@ const NIGHT_LIGHTING = {
   exposure: 1.0,
   useEnvironment: false, // IBL soft-fill only affects lit materials (frames)
   moonOpacity: 1,
+  starOpacity: 0.82,
 };
 
 // V1: Post-processing
@@ -128,9 +130,9 @@ let hoveredCanvas = null;
 
 // I5: Detail view / zoom
 let isDetailView = false;
+let orbitLocked = false;
 let savedCameraPosition = null;
 let savedControlsTarget = null;
-let detailOverlay;
 
 // DOM Elements
 const startButton = document.getElementById("start-button");
@@ -143,9 +145,10 @@ const backgroundMusic = document.getElementById("background-music");
 const volumeToggleBtn = document.getElementById("volume-toggle");
 const selectSound = new Audio(assetUrl("modernSelect.wav"));
 const orientationMessage = document.getElementById("orientation-message");
-
-// I5: Detail overlay DOM
-detailOverlay = document.getElementById("detail-overlay");
+const artworkCaption = document.getElementById("artwork-caption");
+const artworkTitleEl = document.getElementById("artwork-title");
+const artworkArtistEl = document.getElementById("artwork-artist");
+const detailCloseBtn = document.getElementById("detail-close");
 
 // P4: Memory Management - dispose utility
 function disposeObject(obj) {
@@ -202,7 +205,7 @@ const circleRadius = 90;
 const artworkInfo = [
   {
     title: "Peacock's Pride", // image0
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -212,7 +215,7 @@ const artworkInfo = [
   },
   {
     title: "Sun Star", // image2
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -232,7 +235,7 @@ const artworkInfo = [
   },
   {
     title: "Curious Cat", // image6
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -242,7 +245,7 @@ const artworkInfo = [
   },
   {
     title: "Sleepy by the Sea", // image8
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -252,17 +255,17 @@ const artworkInfo = [
   },
   {
     title: "The City", // image10
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
     title: "Patriot's Parachute", // image11
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
     title: "Aerial Acrobat", // image12
-    artist: "",
+    artist: "Tri Pham",
     position: new THREE.Vector3(0, 0, 0),
   },
   {
@@ -373,6 +376,12 @@ function checkOrientation() {
     if (app) app.style.display = show ? "block" : "none";
     if (volumeToggleBtn) {
       volumeToggleBtn.style.display = show && hasEnteredGallery ? "block" : "none";
+    }
+    if (artworkCaption) {
+      artworkCaption.style.display = show && hasEnteredGallery ? "block" : "none";
+    }
+    if (detailCloseBtn) {
+      detailCloseBtn.style.display = show && isDetailView ? "block" : "none";
     }
   };
 
@@ -677,8 +686,8 @@ async function init() {
   pmremGenerator = new THREE.PMREMGenerator(renderer);
   updateSunLighting(true);
 
-  // Invisible wide hit target for sun/moon click (toggle day/night)
-  const sunGeometry = new THREE.SphereGeometry(1200, 32, 32);
+  // Invisible wide hit target for sun/moon click (covers the bloom, not just the disk)
+  const sunGeometry = new THREE.SphereGeometry(5600, 32, 32);
   const sunMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
@@ -688,18 +697,21 @@ async function init() {
   sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
   scene.add(sunMesh);
 
-  // Visible moon disc at night (sky shader disk alone is easy to lose)
-  const moonGeometry = new THREE.SphereGeometry(420, 32, 32);
-  const moonMaterial = new THREE.MeshBasicMaterial({
-    color: 0xe8eef8,
+  // Visible moon disc at night (soft sprite — sky shader disk alone is easy to lose)
+  const moonMaterial = new THREE.SpriteMaterial({
+    map: createMoonTexture(),
+    color: 0xffffff,
     transparent: true,
     opacity: 0,
     depthWrite: false,
+    depthTest: false,
     toneMapped: false,
   });
-  moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
-  moonMesh.renderOrder = 1;
+  moonMesh = new THREE.Sprite(moonMaterial);
+  moonMesh.scale.set(1100, 1100, 1);
+  moonMesh.renderOrder = 2;
   scene.add(moonMesh);
+  createStars();
   updateSunLighting(false);
 
   controls = new OrbitControls(camera, renderer.domElement);
@@ -834,21 +846,15 @@ async function init() {
   if (loadingText) loadingText.textContent = "Almost ready...";
   setProgress(98);
   renderer.render(scene, camera);
-  createArtworkText();
 
   await waitForAudio(backgroundMusic, 3000);
 
-  // I5: Detail overlay click to exit
-  if (detailOverlay) {
-    detailOverlay.addEventListener("click", exitDetailView);
-  }
-
-  // I5: Escape key to exit detail view
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isDetailView) {
+  if (detailCloseBtn) {
+    detailCloseBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       exitDetailView();
-    }
-  });
+    });
+  }
 
   // Call checkOrientation on page load and whenever the orientation changes
   window.addEventListener("load", checkOrientation);
@@ -863,7 +869,8 @@ function animate() {
   requestAnimationFrame(animate);
   // P3: Skip rendering when tab is not visible
   if (!isTabVisible) return;
-  controls.update();
+  // Detail view owns the camera; OrbitControls would clamp minDistance
+  if (!orbitLocked) controls.update();
   render();
 }
 
@@ -937,6 +944,11 @@ function handleKeyPress(event) {
   switch (event.key) {
     case "Enter":
       document.getElementById("start-button").click();
+      break;
+    case "Escape":
+      if (isDetailView) {
+        exitDetailView();
+      }
       break;
     case "m":
     case "M":
@@ -1049,6 +1061,7 @@ function panToCenter() {
       controls.enabled = wasEnabled;
       introTween = null;
       currentCanvasIndex = 0;
+      showArtworkCaption(0);
       startNightModeHintTimer();
     },
   });
@@ -1062,12 +1075,19 @@ function moveToCanvas(index) {
     if (controls) controls.enabled = true;
   }
 
-  // I5: Exit detail view if active
+  // Leave detail without restoring the saved camera — this tween takes over
   if (isDetailView) {
-    exitDetailView();
+    isDetailView = false;
+    orbitLocked = false;
+    savedCameraPosition = null;
+    savedControlsTarget = null;
+    setDetailCloseVisible(false);
+    if (controls) controls.enabled = true;
   }
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
+  showArtworkCaption(currentCanvasIndex);
   gsap.killTweensOf(camera.position);
+  gsap.killTweensOf(controls.target);
   gsap.to(camera.position, {
     x: canvasPositions[currentCanvasIndex].x,
     y: canvasPositions[currentCanvasIndex].y - 2.3,
@@ -1124,76 +1144,94 @@ function onCanvasClick(event) {
   }
 }
 
-function createArtworkText() {
-  const loader = new FontLoader();
-  loader.load(
-    assetUrl("helvetiker_regular.typeface.json"),
-    function (font) {
-      artworkInfo.forEach((artwork, index) => {
-        try {
-          // Create separate geometries for title and artist
-          const titleGeometry = new TextGeometry(artwork.title, {
-            font: font,
-            size: 1.5,
-            height: 0.1,
-            curveSegments: 12,
-            bevelEnabled: false,
-          });
-          titleGeometry.center();
+function showArtworkCaption(index) {
+  const info = artworkInfo[index];
+  if (!info || !artworkCaption) return;
+  if (artworkTitleEl) artworkTitleEl.textContent = info.title;
+  if (artworkArtistEl) {
+    artworkArtistEl.textContent = info.artist || "";
+    artworkArtistEl.hidden = !info.artist;
+  }
+  if (hasEnteredGallery) {
+    artworkCaption.style.display = "block";
+    artworkCaption.classList.add("visible");
+  }
+}
 
-          const textMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0 });
-          const titleMesh = new THREE.Mesh(titleGeometry, textMaterial);
+function setDetailCloseVisible(show) {
+  if (!detailCloseBtn) return;
+  detailCloseBtn.classList.toggle("visible", show);
+  detailCloseBtn.style.display = show ? "block" : "none";
+}
 
-          // Calculate the position to center the text below the artwork
-          const angle = (index / numberOfCanvases) * Math.PI * 2;
-          const textRadius = circleRadius + 3;
-          const textHeight = canvasYPosition - 20;
-
-          titleMesh.position.set(
-            textRadius * Math.cos(angle),
-            textHeight + 1,
-            textRadius * Math.sin(angle)
-          );
-
-          titleMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
-          titleMesh.rotateY(Math.PI);
-
-          scene.add(titleMesh);
-
-          if (artwork.artist) {
-            const artistGeometry = new TextGeometry(artwork.artist, {
-              font: font,
-              size: 1,
-              height: 0.1,
-              curveSegments: 12,
-              bevelEnabled: false,
-            });
-            artistGeometry.center();
-
-            const artistMesh = new THREE.Mesh(artistGeometry, textMaterial);
-
-            artistMesh.position.set(
-              textRadius * Math.cos(angle),
-              textHeight - 1,
-              textRadius * Math.sin(angle)
-            );
-
-            artistMesh.lookAt(new THREE.Vector3(0, textHeight, 0));
-            artistMesh.rotateY(Math.PI);
-
-            scene.add(artistMesh);
-          }
-        } catch (error) {
-          // Error handling for text creation
-        }
-      });
-    },
-    undefined,
-    function (error) {
-      // Font loading error handling
-    }
+function createMoonTexture() {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const g = ctx.createRadialGradient(
+    size * 0.5,
+    size * 0.5,
+    size * 0.08,
+    size * 0.5,
+    size * 0.5,
+    size * 0.5
   );
+  g.addColorStop(0, "rgba(255, 255, 252, 1)");
+  g.addColorStop(0.32, "rgba(238, 242, 248, 1)");
+  g.addColorStop(0.4, "rgba(210, 218, 232, 0.35)");
+  g.addColorStop(0.55, "rgba(170, 185, 210, 0.08)");
+  g.addColorStop(1, "rgba(170, 185, 210, 0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
+function createStars() {
+  const count = 850;
+  const radius = 7800;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    // Hemisphere, kept off the water line
+    const phi = Math.acos(0.08 + Math.random() * 0.9);
+    const r = radius * (0.88 + Math.random() * 0.12);
+    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = r * Math.cos(phi);
+    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+
+    const brightness = 0.42 + Math.random() * 0.58;
+    const cool = Math.random() * 0.08;
+    colors[i * 3] = brightness * (0.92 + cool);
+    colors[i * 3 + 1] = brightness * (0.94 + cool * 0.5);
+    colors[i * 3 + 2] = Math.min(1, brightness * (1.02 + cool));
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: 1.5,
+    sizeAttenuation: false,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+
+  stars = new THREE.Points(geometry, material);
+  stars.frustumCulled = false;
+  stars.renderOrder = 0;
+  stars.visible = false;
+  scene.add(stars);
 }
 
 /** Sync sun/moon direction, key light, water, and optional env map from sky elevation. */
@@ -1317,6 +1355,10 @@ function onCanvasHover(event) {
 function toggleNightMode() {
   if (!skyUniforms || isNightTransitioning) return;
 
+  nightHintShown = true;
+  const hint = document.getElementById("night-mode-hint");
+  if (hint) hint.classList.remove("visible");
+
   const goingNight = !isNightMode;
   const to = goingNight ? NIGHT_LIGHTING : DAY_LIGHTING;
   const duration = 3.8;
@@ -1336,6 +1378,7 @@ function toggleNightMode() {
   gsap.killTweensOf(renderer);
   if (bloomPass) gsap.killTweensOf(bloomPass);
   if (moonMesh?.material) gsap.killTweensOf(moonMesh.material);
+  if (stars?.material) gsap.killTweensOf(stars.material);
 
   // Color proxies for GSAP
   const ambientCol = ambientLight.color.clone();
@@ -1432,12 +1475,24 @@ function toggleNightMode() {
 
   // Artworks are unlit (MeshBasicMaterial) — no day/night material tweaks needed
 
-  // Visible moon disc (sky disk + explicit mesh so it always reads)
+  // Visible moon disc (sky disk + explicit sprite so it always reads)
   if (moonMesh?.material) {
     gsap.to(moonMesh.material, {
       opacity: to.moonOpacity,
       duration: duration * 0.85,
       ease,
+    });
+  }
+
+  if (stars?.material) {
+    if (goingNight) stars.visible = true;
+    gsap.to(stars.material, {
+      opacity: to.starOpacity,
+      duration: duration * 0.9,
+      ease,
+      onComplete: () => {
+        if (!goingNight && stars) stars.visible = false;
+      },
     });
   }
 
@@ -1508,14 +1563,32 @@ function toggleFullscreen() {
   }
 }
 
-// I5: Detail View / Zoom
+function getDetailCameraPose(index) {
+  const canvasPos = canvasPositions[index];
+  const isEven = index % 2 === 0;
+  const canvasWidth = isEven ? 20 : 30;
+  const canvasHeight = isEven ? 30 : 20;
+  const radial = new THREE.Vector3(canvasPos.x, 0, canvasPos.z).normalize();
+
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+  const fill = 0.56;
+  const distH = canvasHeight / 2 / Math.tan(vFov / 2) / fill;
+  const distW = canvasWidth / 2 / Math.tan(hFov / 2) / fill;
+  const dist = Math.max(distH, distW, 32);
+
+  return {
+    eye: new THREE.Vector3(
+      canvasPos.x + radial.x * dist,
+      canvasPos.y,
+      canvasPos.z + radial.z * dist
+    ),
+    target: canvasPos.clone(),
+  };
+}
+
 function onCanvasDoubleClick(event) {
   if (isOrientationChanging) return;
-
-  if (isDetailView) {
-    exitDetailView();
-    return;
-  }
 
   const currentWidth = window.innerWidth;
   const currentHeight = window.innerHeight;
@@ -1524,78 +1597,105 @@ function onCanvasDoubleClick(event) {
   raycaster.setFromCamera(mouse, camera);
 
   const intersects = raycaster
-    .intersectObjects(scene.children)
+    .intersectObjects(canvases)
     .filter((intersect) => canvases.includes(intersect.object));
 
-  if (intersects.length > 0) {
-    intersects.sort((a, b) => a.distance - b.distance);
-    const closestCanvas = intersects[0].object;
-    const canvasIndex = canvases.indexOf(closestCanvas);
+  if (intersects.length === 0) {
+    if (isDetailView) exitDetailView();
+    return;
+  }
 
-    // Save current camera state
+  intersects.sort((a, b) => a.distance - b.distance);
+  enterDetailView(canvases.indexOf(intersects[0].object));
+}
+
+function enterDetailView(canvasIndex) {
+  if (canvasIndex < 0) return;
+
+  if (introTween) {
+    introTween.kill();
+    introTween = null;
+  }
+
+  currentCanvasIndex = canvasIndex;
+  showArtworkCaption(canvasIndex);
+
+  if (!isDetailView) {
     savedCameraPosition = camera.position.clone();
     savedControlsTarget = controls.target.clone();
-
-    // Calculate zoom position (60% closer to artwork)
-    const canvasPos = canvasPositions[canvasIndex];
-    const zoomPos = new THREE.Vector3().lerpVectors(
-      camera.position,
-      canvasPos,
-      0.6
-    );
-
-    isDetailView = true;
-    controls.enabled = false;
-
-    // Show overlay
-    if (detailOverlay) {
-      detailOverlay.classList.add("visible");
-    }
-
-    gsap.to(camera.position, {
-      x: zoomPos.x,
-      y: zoomPos.y,
-      z: zoomPos.z,
-      duration: 1.2,
-      ease: "power2.inOut",
-      onUpdate: () => {
-        camera.lookAt(canvasPos);
-      },
-    });
   }
+
+  isDetailView = true;
+  orbitLocked = true;
+  controls.enabled = false;
+  setDetailCloseVisible(true);
+
+  const { eye, target } = getDetailCameraPose(canvasIndex);
+  gsap.killTweensOf(camera.position);
+  gsap.killTweensOf(controls.target);
+
+  gsap.to(camera.position, {
+    x: eye.x,
+    y: eye.y,
+    z: eye.z,
+    duration: 1.15,
+    ease: "power2.inOut",
+    onUpdate: () => {
+      camera.lookAt(controls.target);
+    },
+  });
+  gsap.to(controls.target, {
+    x: target.x,
+    y: target.y,
+    z: target.z,
+    duration: 1.15,
+    ease: "power2.inOut",
+  });
 }
 
 function exitDetailView() {
   if (!isDetailView) return;
   isDetailView = false;
+  setDetailCloseVisible(false);
 
-  // Hide overlay
-  if (detailOverlay) {
-    detailOverlay.classList.remove("visible");
-  }
+  gsap.killTweensOf(camera.position);
+  gsap.killTweensOf(controls.target);
 
   if (savedCameraPosition && savedControlsTarget) {
+    const restorePos = savedCameraPosition.clone();
+    const restoreTarget = savedControlsTarget.clone();
+    savedCameraPosition = null;
+    savedControlsTarget = null;
     gsap.to(camera.position, {
-      x: savedCameraPosition.x,
-      y: savedCameraPosition.y,
-      z: savedCameraPosition.z,
-      duration: 1.2,
+      x: restorePos.x,
+      y: restorePos.y,
+      z: restorePos.z,
+      duration: 1.15,
       ease: "power2.inOut",
-      onUpdate: () => controls.update(),
+      onUpdate: () => {
+        camera.lookAt(controls.target);
+      },
+    });
+    gsap.to(controls.target, {
+      x: restoreTarget.x,
+      y: restoreTarget.y,
+      z: restoreTarget.z,
+      duration: 1.15,
+      ease: "power2.inOut",
       onComplete: () => {
-        controls.target.copy(savedControlsTarget);
+        orbitLocked = false;
         controls.enabled = true;
         controls.update();
       },
     });
   } else {
+    orbitLocked = false;
     controls.enabled = true;
     controls.update();
   }
 }
 
 // V4: Night Mode Discovery Hint
-let nightHintShown = false;
 function startNightModeHintTimer() {
   if (nightHintShown) return;
   setTimeout(() => {
@@ -1624,3 +1724,5 @@ init().catch(() => {
     revealEnterUI();
   }
 });
+
+window.__toggleNightMode = toggleNightMode;

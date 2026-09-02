@@ -76,11 +76,16 @@
     <div id="app"></div>
     <button id="volume-toggle">Toggle Sound</button>
 
-    <!-- V4: Night Mode Discovery Hint -->
-    <div id="night-mode-hint">Click the horizon to toggle night mode</div>
+    <div id="artwork-caption" aria-live="polite">
+      <h2 id="artwork-title"></h2>
+      <p id="artwork-artist"></p>
+    </div>
+    <button id="detail-close" type="button" aria-label="Close detail view">
+      Close
+    </button>
 
-    <!-- I5: Detail View Overlay -->
-    <div id="detail-overlay"></div>
+    <!-- V4: Night Mode Discovery Hint -->
+    <div id="night-mode-hint">Click the sun to toggle night mode</div>
 
     <script type="module" src="/main.js"></script>
   </body>
