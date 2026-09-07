@@ -53,12 +53,14 @@ let pmremGenerator;
 let ambientLight;
 let sunLight;
 let moonMesh;
+let sunDisc;
 let stars;
 let rectLights = [];
 let dayEnvironmentMap = null;
 let assetsLoaded = false;
 let hasEnteredGallery = false;
 let isOrientationChanging = false;
+const waterMotion = { timeScale: 0.3 };
 
 // Resolve public asset URLs against Vite base (works on Vercel root hosting)
 const assetUrl = (path) => {
@@ -79,8 +81,11 @@ const DAY_LIGHTING = {
   ambientColor: 0xfff6e8,
   sunIntensity: 1.35,
   sunColor: 0xfff2d6,
-  waterSunColor: 0xffffff,
-  waterColor: 0x001e0f,
+  waterSunColor: 0xfff0d8,
+  waterColor: 0x012218,
+  waterSize: 0.48,
+  waterDistortion: 2.15,
+  waterTimeScale: 0.3,
   rectMin: 1.4,
   rectMax: 2.2,
   rectColor: 0xffa366,
@@ -88,6 +93,7 @@ const DAY_LIGHTING = {
   bloomThreshold: 0.88,
   exposure: 1.05,
   useEnvironment: true,
+  sunDiscOpacity: 0.88,
   moonOpacity: 0,
   starOpacity: 0,
 };
@@ -104,8 +110,11 @@ const NIGHT_LIGHTING = {
   ambientColor: 0x0a1020,
   sunIntensity: 0.02,
   sunColor: 0xc8d4ef,
-  waterSunColor: 0x8899aa,
+  waterSunColor: 0xb8c4d4,
   waterColor: 0x00060c,
+  waterSize: 0.36,
+  waterDistortion: 1.45,
+  waterTimeScale: 0.14,
   rectMin: 1.8,
   rectMax: 2.8,
   rectColor: 0xffb070,
@@ -113,8 +122,9 @@ const NIGHT_LIGHTING = {
   bloomThreshold: 0.82, // bloom lights, not soft art glow
   exposure: 1.0,
   useEnvironment: false, // IBL soft-fill only affects lit materials (frames)
+  sunDiscOpacity: 0,
   moonOpacity: 1,
-  starOpacity: 0.82,
+  starOpacity: 1,
 };
 
 // V1: Post-processing
@@ -201,6 +211,8 @@ const radius = progressRing.r.baseVal.value;
 const circumference = radius * 2 * Math.PI;
 const canvasYPosition = 25;
 const circleRadius = 90;
+const GALLERY_LOOK_TARGET = new THREE.Vector3(0, 10, 0);
+const CANVAS_VIEW_Y_OFFSET = 2.3;
 
 const artworkInfo = [
   {
@@ -418,7 +430,7 @@ function handleOrientationChange() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      if (controls) {
+      if (controls && !orbitLocked) {
         controls.update();
       }
       render();
@@ -512,6 +524,8 @@ async function init() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
   }
   sceneContainer.appendChild(renderer.domElement);
+  renderer.domElement.tabIndex = 0;
+  renderer.domElement.setAttribute("aria-label", "3D art gallery");
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
 
@@ -554,6 +568,7 @@ async function init() {
 
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
   const waterNormals = prepareTexture(loadedTextures[0], { wrap: true });
+  waterNormals.anisotropy = Math.min(8, maxAniso);
   const marbleTexture = prepareTexture(loadedTextures[1], { srgb: true });
   marbleTexture.anisotropy = Math.min(4, maxAniso);
   const imageTextures = loadedTextures.slice(2).map((tex) => {
@@ -566,17 +581,20 @@ async function init() {
   if (loadingText) loadingText.textContent = "Building scene...";
 
   const waterGeometry = new THREE.PlaneGeometry(50000, 50000);
+  const waterMapSize = window.innerWidth <= 1024 ? 512 : 1024;
 
   water = new Water(waterGeometry, {
-    textureWidth: 512,
-    textureHeight: 512,
+    textureWidth: waterMapSize,
+    textureHeight: waterMapSize,
     waterNormals: waterNormals,
     sunDirection: new THREE.Vector3(),
     sunColor: DAY_LIGHTING.waterSunColor,
     waterColor: DAY_LIGHTING.waterColor,
-    distortionScale: 3.7,
+    distortionScale: DAY_LIGHTING.waterDistortion,
     fog: scene.fog !== undefined,
   });
+  water.material.uniforms["size"].value = DAY_LIGHTING.waterSize;
+  waterMotion.timeScale = DAY_LIGHTING.waterTimeScale;
 
   water.rotation.x = -Math.PI / 2;
   scene.add(water);
@@ -711,6 +729,22 @@ async function init() {
   moonMesh.scale.set(1100, 1100, 1);
   moonMesh.renderOrder = 2;
   scene.add(moonMesh);
+
+  // Visible sun corona so the sky-shader disk is an obvious click target
+  const sunDiscMaterial = new THREE.SpriteMaterial({
+    map: createSunTexture(),
+    color: 0xffffff,
+    transparent: true,
+    opacity: DAY_LIGHTING.sunDiscOpacity,
+    depthWrite: false,
+    depthTest: false,
+    toneMapped: false,
+  });
+  sunDisc = new THREE.Sprite(sunDiscMaterial);
+  sunDisc.scale.set(1400, 1400, 1);
+  sunDisc.renderOrder = 2;
+  scene.add(sunDisc);
+
   createStars();
   updateSunLighting(false);
 
@@ -875,7 +909,10 @@ function animate() {
 }
 
 function render() {
-  water.material.uniforms["time"].value += 0.69 / 60.0;
+  water.material.uniforms["time"].value += waterMotion.timeScale / 60.0;
+  if (stars?.material?.uniforms?.uTime) {
+    stars.material.uniforms.uTime.value = performance.now() * 0.001;
+  }
   // V1: Use composer for post-processing
   if (composer) {
     composer.render();
@@ -912,7 +949,11 @@ function onStartButtonClick() {
     hasEnteredGallery = true;
     selectSound.play().catch(() => {});
     loadingScreen.style.opacity = "0";
+    loadingScreen.style.pointerEvents = "none";
+    loadingScreen.classList.add("is-exiting");
     sceneContainer.style.opacity = "1";
+    if (startButton) startButton.blur();
+    renderer.domElement?.focus({ preventScroll: true });
 
     if (volumeToggleBtn) volumeToggleBtn.style.display = "block";
 
@@ -955,10 +996,12 @@ function handleKeyPress(event) {
       toggleMusic();
       break;
     case "ArrowRight":
+      event.preventDefault();
       selectSound.play();
       moveToCanvas(currentCanvasIndex - 1);
       break;
     case "ArrowLeft":
+      event.preventDefault();
       selectSound.play();
       moveToCanvas(currentCanvasIndex + 1);
       break;
@@ -977,7 +1020,13 @@ function onWindowResize() {
   if (composer) {
     composer.setSize(window.innerWidth, window.innerHeight);
   }
-  controls.update();
+  if (stars?.material?.uniforms?.uPixelRatio) {
+    stars.material.uniforms.uPixelRatio.value = Math.min(
+      window.devicePixelRatio,
+      2
+    );
+  }
+  if (!orbitLocked) controls.update();
   render();
 
   // Use the new orientation handler
@@ -986,6 +1035,35 @@ function onWindowResize() {
 
 // V3: Single continuous intro spiral (no multi-phase stop/reverse)
 let introTween = null;
+
+/** Orbit-legal viewpoint in front of a painting (outside minDistance). */
+function getCanvasFocusPosition(index) {
+  const canvasPos = canvasPositions[index];
+  const offset = new THREE.Vector3(
+    canvasPos.x - GALLERY_LOOK_TARGET.x,
+    canvasPos.y - CANVAS_VIEW_Y_OFFSET - GALLERY_LOOK_TARGET.y,
+    canvasPos.z - GALLERY_LOOK_TARGET.z
+  );
+  const minDist = (controls?.minDistance ?? 140) + 0.5;
+  if (offset.length() < minDist) {
+    offset.setLength(minDist);
+  }
+  return GALLERY_LOOK_TARGET.clone().add(offset);
+}
+
+function lockOrbitDuringTween() {
+  orbitLocked = true;
+  if (controls) controls.enabled = false;
+}
+
+function unlockOrbitAfterTween() {
+  if (isDetailView) return;
+  orbitLocked = false;
+  if (controls) {
+    controls.enabled = true;
+    controls.update();
+  }
+}
 
 function panToCenter() {
   if (!camera || !controls || !canvasPositions.length) return;
@@ -997,9 +1075,8 @@ function panToCenter() {
 
   const startPos = camera.position.clone();
   const startTarget = controls.target.clone();
-  const firstPos = canvasPositions[0];
-  const endPos = new THREE.Vector3(firstPos.x, firstPos.y - 2.3, firstPos.z);
-  const endTarget = new THREE.Vector3(0, 10, 0);
+  const endPos = getCanvasFocusPosition(0);
+  const endTarget = GALLERY_LOOK_TARGET.clone();
 
   const startAngle = Math.atan2(startPos.z, startPos.x);
   const endAngle = Math.atan2(endPos.z, endPos.x);
@@ -1020,8 +1097,7 @@ function panToCenter() {
   const smoothstep2 = (t) => smoothstep(smoothstep(t));
 
   const state = { t: 0 };
-  const wasEnabled = controls.enabled;
-  controls.enabled = false;
+  lockOrbitDuringTween();
 
   introTween = gsap.to(state, {
     t: 1,
@@ -1052,17 +1128,16 @@ function panToCenter() {
         startTarget.y + (endTarget.y - startTarget.y) * lookT,
         startTarget.z + (endTarget.z - startTarget.z) * lookT
       );
-      controls.update();
+      camera.lookAt(controls.target);
     },
     onComplete: () => {
       camera.position.copy(endPos);
       controls.target.copy(endTarget);
-      controls.update();
-      controls.enabled = wasEnabled;
       introTween = null;
       currentCanvasIndex = 0;
       showArtworkCaption(0);
       startNightModeHintTimer();
+      unlockOrbitAfterTween();
     },
   });
 }
@@ -1072,31 +1147,39 @@ function moveToCanvas(index) {
   if (introTween) {
     introTween.kill();
     introTween = null;
-    if (controls) controls.enabled = true;
   }
 
   // Leave detail without restoring the saved camera — this tween takes over
   if (isDetailView) {
     isDetailView = false;
-    orbitLocked = false;
     savedCameraPosition = null;
     savedControlsTarget = null;
     setDetailCloseVisible(false);
-    if (controls) controls.enabled = true;
   }
   currentCanvasIndex = (index + numberOfCanvases) % numberOfCanvases;
   showArtworkCaption(currentCanvasIndex);
+  lockOrbitDuringTween();
   gsap.killTweensOf(camera.position);
   gsap.killTweensOf(controls.target);
+
+  const pos = getCanvasFocusPosition(currentCanvasIndex);
   gsap.to(camera.position, {
-    x: canvasPositions[currentCanvasIndex].x,
-    y: canvasPositions[currentCanvasIndex].y - 2.3,
-    z: canvasPositions[currentCanvasIndex].z,
+    x: pos.x,
+    y: pos.y,
+    z: pos.z,
     duration: 1.69,
     ease: "power2.inOut",
-    onUpdate: function () {
-      controls.update();
+    onUpdate: () => {
+      camera.lookAt(controls.target);
     },
+  });
+  gsap.to(controls.target, {
+    x: GALLERY_LOOK_TARGET.x,
+    y: GALLERY_LOOK_TARGET.y,
+    z: GALLERY_LOOK_TARGET.z,
+    duration: 1.69,
+    ease: "power2.inOut",
+    onComplete: unlockOrbitAfterTween,
   });
 }
 
@@ -1136,7 +1219,7 @@ function onCanvasClick(event) {
     moveToCanvas(canvasIndex);
   }
 
-  const celestial = [sunMesh, moonMesh].filter(Boolean);
+  const celestial = [sunMesh, moonMesh, sunDisc].filter(Boolean);
   const sunIntersects = raycaster.intersectObjects(celestial);
   if (sunIntersects.length > 0) {
     selectSound.play();
@@ -1190,41 +1273,166 @@ function createMoonTexture() {
   return texture;
 }
 
+function createSunTexture() {
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const cx = size * 0.5;
+  const cy = size * 0.5;
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.5);
+  g.addColorStop(0, "rgba(255, 252, 240, 1)");
+  g.addColorStop(0.1, "rgba(255, 232, 170, 1)");
+  g.addColorStop(0.2, "rgba(255, 196, 95, 0.92)");
+  g.addColorStop(0.34, "rgba(255, 150, 55, 0.4)");
+  g.addColorStop(0.52, "rgba(255, 120, 40, 0.12)");
+  g.addColorStop(0.74, "rgba(255, 100, 30, 0.03)");
+  g.addColorStop(1, "rgba(255, 90, 20, 0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function createStars() {
-  const count = 850;
-  const radius = 7800;
+  const count = 2400;
+  const radius = 8200;
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  const phases = new Float32Array(count);
+  const twinkles = new Float32Array(count);
+
+  const samplePosition = () => {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const theta = Math.random() * Math.PI * 2;
+      const cosPhi = 0.06 + Math.random() * 0.94;
+      const sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
+      const r = radius * (0.92 + Math.random() * 0.08);
+      const x = r * sinPhi * Math.cos(theta);
+      const y = r * cosPhi;
+      const z = r * sinPhi * Math.sin(theta);
+      // Tilted galactic band — denser along a great-circle, sparse halo
+      const gy = y * 0.84 + z * 0.54;
+      const band = Math.exp(-Math.abs(gy / r) * 4.8);
+      if (Math.random() < 0.34 + 0.66 * band) {
+        return [x, y, z];
+      }
+    }
+    const theta = Math.random() * Math.PI * 2;
+    const cosPhi = 0.15 + Math.random() * 0.7;
+    const sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
+    return [
+      radius * sinPhi * Math.cos(theta),
+      radius * cosPhi,
+      radius * sinPhi * Math.sin(theta),
+    ];
+  };
 
   for (let i = 0; i < count; i++) {
-    const theta = Math.random() * Math.PI * 2;
-    // Hemisphere, kept off the water line
-    const phi = Math.acos(0.08 + Math.random() * 0.9);
-    const r = radius * (0.88 + Math.random() * 0.12);
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.cos(phi);
-    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    const [x, y, z] = samplePosition();
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
 
-    const brightness = 0.42 + Math.random() * 0.58;
-    const cool = Math.random() * 0.08;
-    colors[i * 3] = brightness * (0.92 + cool);
-    colors[i * 3 + 1] = brightness * (0.94 + cool * 0.5);
-    colors[i * 3 + 2] = Math.min(1, brightness * (1.02 + cool));
+    // Power-law magnitude: many faint, few bright
+    const mag = Math.pow(Math.random(), 4.1);
+    const isPlanet = i < 3;
+    const spectral = Math.random();
+    let cr;
+    let cg;
+    let cb;
+    if (isPlanet) {
+      cr = 1;
+      cg = 0.93;
+      cb = 0.82;
+    } else if (spectral < 0.12) {
+      cr = 1;
+      cg = 0.68 + Math.random() * 0.16;
+      cb = 0.48 + Math.random() * 0.14;
+    } else if (spectral < 0.48) {
+      cr = 1;
+      cg = 0.92 + Math.random() * 0.06;
+      cb = 0.78 + Math.random() * 0.12;
+    } else {
+      cr = 0.78 + Math.random() * 0.12;
+      cg = 0.88 + Math.random() * 0.08;
+      cb = 1;
+    }
+
+    const brightness = isPlanet ? 0.9 : 0.16 + mag * 0.7;
+    colors[i * 3] = cr * brightness;
+    colors[i * 3 + 1] = cg * brightness;
+    colors[i * 3 + 2] = cb * brightness;
+
+    sizes[i] = isPlanet ? 6.2 : 1.35 + mag * mag * 7.2;
+    phases[i] = Math.random() * Math.PI * 2;
+    // Dimmer stars scintillate more; planets don't
+    twinkles[i] = isPlanet ? 0 : 0.08 + (1 - mag) * 0.55;
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+  geometry.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
+  geometry.setAttribute("aTwinkle", new THREE.BufferAttribute(twinkles, 1));
 
-  const material = new THREE.PointsMaterial({
-    size: 1.5,
-    sizeAttenuation: false,
-    vertexColors: true,
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uOpacity: { value: 0 },
+      uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+    },
+    vertexShader: `
+      attribute float aSize;
+      attribute float aPhase;
+      attribute float aTwinkle;
+      uniform float uTime;
+      uniform float uPixelRatio;
+      varying vec3 vColor;
+      varying float vTwinkle;
+      varying float vHorizon;
+
+      void main() {
+        vColor = color;
+        float elev = normalize(position).y;
+        vHorizon = smoothstep(0.03, 0.2, elev);
+        float scint = 0.55 + 0.45 * sin(uTime * (1.15 + aTwinkle * 2.4) + aPhase);
+        vTwinkle = 1.0 - aTwinkle * scint * mix(1.25, 0.7, vHorizon);
+
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = aSize * uPixelRatio * (0.84 + 0.16 * vTwinkle);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying vec3 vColor;
+      varying float vTwinkle;
+      varying float vHorizon;
+
+      void main() {
+        vec2 p = gl_PointCoord * 2.0 - 1.0;
+        float r = dot(p, p);
+        if (r > 1.0) discard;
+        float core = exp(-r * 5.2);
+        float halo = exp(-r * 1.7) * 0.16;
+        float alpha = (core + halo) * vTwinkle * vHorizon * uOpacity;
+        if (alpha < 0.012) discard;
+        gl_FragColor = vec4(vColor, alpha);
+      }
+    `,
     transparent: true,
-    opacity: 0,
     depthWrite: false,
+    depthTest: true,
     blending: THREE.AdditiveBlending,
+    vertexColors: true,
     toneMapped: false,
+    lights: false,
+    fog: false,
   });
 
   stars = new THREE.Points(geometry, material);
@@ -1260,6 +1468,9 @@ function updateSunLighting(refreshEnvironment = false) {
   if (moonMesh) {
     // Slightly closer so the disc reads larger against the sky dome
     moonMesh.position.copy(sun).multiplyScalar(42000);
+  }
+  if (sunDisc) {
+    sunDisc.position.copy(sun).multiplyScalar(42000);
   }
 
   if (refreshEnvironment && pmremGenerator && skyMesh) {
@@ -1306,7 +1517,7 @@ function onCanvasHover(event) {
   mouse.y = -(event.clientY / currentHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  const celestialTargets = [sunMesh, moonMesh].filter(Boolean);
+  const celestialTargets = [sunMesh, moonMesh, sunDisc].filter(Boolean);
   const intersects = raycaster.intersectObjects(
     canvases.concat(celestialTargets)
   );
@@ -1378,7 +1589,15 @@ function toggleNightMode() {
   gsap.killTweensOf(renderer);
   if (bloomPass) gsap.killTweensOf(bloomPass);
   if (moonMesh?.material) gsap.killTweensOf(moonMesh.material);
-  if (stars?.material) gsap.killTweensOf(stars.material);
+  if (sunDisc?.material) gsap.killTweensOf(sunDisc.material);
+  if (stars?.material?.uniforms?.uOpacity) {
+    gsap.killTweensOf(stars.material.uniforms.uOpacity);
+  }
+  if (water?.material?.uniforms) {
+    gsap.killTweensOf(water.material.uniforms.size);
+    gsap.killTweensOf(water.material.uniforms.distortionScale);
+  }
+  gsap.killTweensOf(waterMotion);
 
   // Color proxies for GSAP
   const ambientCol = ambientLight.color.clone();
@@ -1437,7 +1656,25 @@ function toggleNightMode() {
     onUpdate: () => sunLight.color.copy(sunCol),
   });
 
-  // Water palette
+  // Water palette + calmer night swell
+  if (water?.material?.uniforms) {
+    gsap.to(water.material.uniforms.size, {
+      value: to.waterSize,
+      duration,
+      ease,
+    });
+    gsap.to(water.material.uniforms.distortionScale, {
+      value: to.waterDistortion,
+      duration,
+      ease,
+    });
+  }
+  gsap.to(waterMotion, {
+    timeScale: to.waterTimeScale,
+    duration,
+    ease,
+  });
+
   gsap.to(waterSunFrom, {
     r: waterSunTo.r,
     g: waterSunTo.g,
@@ -1484,10 +1721,18 @@ function toggleNightMode() {
     });
   }
 
-  if (stars?.material) {
+  if (sunDisc?.material) {
+    gsap.to(sunDisc.material, {
+      opacity: to.sunDiscOpacity,
+      duration: duration * 0.85,
+      ease,
+    });
+  }
+
+  if (stars?.material?.uniforms?.uOpacity) {
     if (goingNight) stars.visible = true;
-    gsap.to(stars.material, {
-      opacity: to.starOpacity,
+    gsap.to(stars.material.uniforms.uOpacity, {
+      value: to.starOpacity,
       duration: duration * 0.9,
       ease,
       onComplete: () => {
