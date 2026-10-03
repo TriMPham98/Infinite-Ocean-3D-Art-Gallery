@@ -16,7 +16,7 @@ https://github.com/TriMPham98/CS351-final-project/assets/70353051/4eca4640-5e40-
 * Scroll to zoom
 * Click and drag to move the camera
 * Click on the canvas to move the camera to the specific position
-* **Easter Egg:** Click on sun to toggle night mode
+* **Easter Egg:** Click on sun to toggle night mode — a real sunset (Cannon Beach, Oregon, 3 Aug 2025) with the sun, moon, planets and Milky Way computed from an ephemeris; click the moon for sunrise
 
 ### Keyboard Controls:
 * ```Enter``` to begin the interactive experience
