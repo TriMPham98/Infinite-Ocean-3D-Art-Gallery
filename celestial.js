@@ -123,14 +123,18 @@ const SKY_EXTRA_MAIN = /* glsl */ `
   // Afterglow hugging the horizon on the sun side
   vec2 dirXZ = normalize(direction.xz + vec2(1e-5));
   vec2 sunXZ = normalize(vSunDirection.xz + vec2(1e-5));
-  float toSun = dot(dirXZ, sunXZ) * 0.5 + 0.5;
+  // Clamp: rounding lets the dot of two unit vectors overshoot ±1, and on
+  // Windows (ANGLE/D3D11) pow() of a negative base is NaN. A NaN here
+  // poisons the bloom chain and the sky IBL, flashing black boxes on screen.
+  float toSun = clamp(dot(dirXZ, sunXZ) * 0.5 + 0.5, 0.0, 1.0);
   float glow = pow(toSun, 4.0) * exp(-h * 6.0)
     + pow(toSun, 20.0) * exp(-h * 20.0) * 1.6;
   skyColor += uGlowColor * glow * uGlowStrength;
 
   // Belt of Venus: pink anti-twilight arch above the Earth's shadow
   float anti = pow(1.0 - toSun, 2.0);
-  float belt = anti * exp(-pow((h - 0.09) / 0.07, 2.0));
+  float beltY = (h - 0.09) / 0.07;
+  float belt = anti * exp(-beltY * beltY);
   float earthShadow = anti * (1.0 - smoothstep(0.0, 0.06, h));
   skyColor += uBeltColor * belt * uBeltStrength;
   skyColor *= 1.0 - earthShadow * uBeltStrength * 6.0;
